@@ -8,6 +8,8 @@ import { CustomCursor } from "@/components/custom-cursor"
 import { SmoothScroll } from "@/components/smooth-scroll"
 import { SectionBlend } from "@/components/section-blend"
 
+export const dynamic = 'force-dynamic'
+
 export default function Home() {
   return (
     <SmoothScroll>
