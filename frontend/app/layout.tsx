@@ -31,6 +31,10 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en" className={`${playfair.variable} ${geistMono.variable}`}>
+      <head>
+        <link rel="manifest" href="/manifest.json" />
+        <meta name="theme-color" content="#000000" />
+      </head>
       <body className="font-sans antialiased overflow-x-hidden">
         <div className="noise-overlay" />
         {children}
