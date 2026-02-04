@@ -6,6 +6,7 @@
     "compile": "hardhat compile",
     "deploy:arc": "hardhat run scripts/deploy-arc.ts --network arc",
     "deploy:sepolia": "hardhat run scripts/deploy-sepolia.ts --network sepolia",
+    "redeploy:vault": "hardhat run scripts/redeploy-challenge-tracker.ts --network arc",
     "test": "hardhat test",
     "verify:arc": "hardhat verify --network arc",
     "verify:sepolia": "hardhat verify --network sepolia"
