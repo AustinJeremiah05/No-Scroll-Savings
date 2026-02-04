@@ -2,6 +2,8 @@
 
 import { useState, useEffect } from "react"
 import { motion, AnimatePresence } from "framer-motion"
+import { useAccount } from "wagmi"
+import Link from "next/link"
 
 const navLinks = [
   { label: "About", href: "#about" },
@@ -12,6 +14,7 @@ const navLinks = [
 export function Navbar() {
   const [isScrolled, setIsScrolled] = useState(false)
   const [isMenuOpen, setIsMenuOpen] = useState(false)
+  const { isConnected } = useAccount()
 
   useEffect(() => {
     const handleScroll = () => {
@@ -67,6 +70,16 @@ export function Navbar() {
                 </button>
               </li>
             ))}
+            {isConnected && (
+              <li>
+                <Link
+                  href="/dashboard"
+                  className="group relative font-mono text-xs tracking-wider text-muted-foreground hover:text-foreground transition-colors duration-300 px-4 py-2 bg-accent/10 rounded hover:bg-accent/20"
+                >
+                  DASHBOARD →
+                </Link>
+              </li>
+            )}
           </ul>
 
           {/* Status Indicator */}
@@ -125,6 +138,22 @@ export function Navbar() {
                   {link.label}
                 </motion.button>
               ))}
+              {isConnected && (
+                <motion.div
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0, y: 20 }}
+                  transition={{ delay: navLinks.length * 0.1 }}
+                >
+                  <Link
+                    href="/dashboard"
+                    onClick={() => setIsMenuOpen(false)}
+                    className="text-3xl font-sans tracking-tight text-accent hover:text-accent/80 transition-colors"
+                  >
+                    Dashboard →
+                  </Link>
+                </motion.div>
+              )}
               <motion.div
                 initial={{ opacity: 0 }}
                 animate={{ opacity: 1 }}

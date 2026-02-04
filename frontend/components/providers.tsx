@@ -7,7 +7,6 @@ import { QueryClientProvider, QueryClient } from '@tanstack/react-query';
 import { sepolia, baseSepolia, optimismSepolia, arbitrumSepolia } from 'wagmi/chains';
 import { defineChain } from 'viem';
 
-// Arc Testnet custom chain
 const arcTestnet = defineChain({
   id: 5042002,
   name: 'Arc Testnet',
