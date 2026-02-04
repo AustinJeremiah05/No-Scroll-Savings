@@ -20,11 +20,13 @@ const config: HardhatUserConfig = {
       url: process.env.ARC_RPC_URL || "https://rpc-arc-testnet.gelato.digital",
       accounts: process.env.DEPLOYER_PRIVATE_KEY ? [process.env.DEPLOYER_PRIVATE_KEY] : [],
       chainId: 5042002,
+      timeout: 60000,
     },
     sepolia: {
-      url: process.env.SEPOLIA_RPC_URL || "https://sepolia.infura.io/v3/your_infura_project_id",
+      url: process.env.SEPOLIA_RPC_URL || "https://rpc.ankr.com/eth_sepolia",
       accounts: process.env.DEPLOYER_PRIVATE_KEY ? [process.env.DEPLOYER_PRIVATE_KEY] : [],
       chainId: 11155111,
+      timeout: 60000,
     },
   },
   etherscan: {
