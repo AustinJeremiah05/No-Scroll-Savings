@@ -1,0 +1,14 @@
+<resources>
+    <string name="app_name">Digital Wellbeing Viewer</string>
+    <string name="app_title">Your Digital Wellbeing</string>
+    <string name="permission_required_message">This app needs Usage Access permission to display your screen time data.\n\nTap the button below to open Settings and grant permission to this app.</string>
+    <string name="grant_permission">Open Settings</string>
+    <string name="select_time_range">Select Time Range:</string>
+    <string name="one_hour">1 Hour</string>
+    <string name="twenty_four_hours">24 Hours</string>
+    <string name="seven_days">7 Days</string>
+    <string name="custom_range">Custom</string>
+    <string name="refresh">Refresh Data</string>
+    <string name="total_screen_time">Total screen time: 0h 0m</string>
+    <string name="no_usage_data">No usage data available for the selected time range.</string>
+</resources>
