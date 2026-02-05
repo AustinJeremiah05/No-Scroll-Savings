@@ -1,9 +1,9 @@
 // Contract addresses from deployment
 export const CONTRACTS = {
 
-  CHALLENGE_TRACKER: "0x2B1A80A3CF8E690b7f69694fF100Bd5c85AF75DA",
-  LOTTERY_ENGINE: "0xA900eF9aB5907f178b6C562f044c896c42c31F7D",
-  SAVINGS_VAULT: "0x9D416d7aeB87fd18b5fB46c2193Da9CCEbC51231",
+  CHALLENGE_TRACKER: "0xe594029CfC6CBf1b31A64FD81Dd275f4e0A5dB4e",
+  LOTTERY_ENGINE: "0x259503ACC3bb1cE516E5AfC209BAE5E613e3B23D",
+  SAVINGS_VAULT: "0xe85486A9253913d54f0D6EDB3b91f82a6829b892",
   USDC_ARC: "0x3600000000000000000000000000000000000000",
 
   TREASURY_MANAGER: "0xc4534a320Ff1561EC173A76103E43afe52dBC2B5",
@@ -52,6 +52,20 @@ export const SAVINGS_VAULT_ABI = [
     inputs: [{ name: "user", type: "address" }],
     name: "balanceOf",
     outputs: [{ name: "", type: "uint256" }],
+    stateMutability: "view",
+    type: "function",
+  },
+  {
+    inputs: [{ name: "user", type: "address" }],
+    name: "getUserDeposit",
+    outputs: [
+      { name: "shares", type: "uint256" },
+      { name: "assets", type: "uint256" },
+      { name: "depositTime", type: "uint256" },
+      { name: "unlockTime", type: "uint256" },
+      { name: "challengeType", type: "string" },
+      { name: "active", type: "bool" },
+    ],
     stateMutability: "view",
     type: "function",
   },

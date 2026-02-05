@@ -5,6 +5,7 @@ import { useAccount } from "wagmi";
 import { useRouter } from "next/navigation";
 import { createClient } from "@supabase/supabase-js";
 import { SentientSphere } from "@/components/sentient-sphere";
+import { CONTRACTS } from "@/lib/contracts";
 import {
   useDepositUSDC,
   useRecordCompliance,
@@ -14,6 +15,7 @@ import {
   useGetLotteryEntries,
   useGetChallenge,
   useGetBalance,
+  useGetUserDeposit,
 } from "@/hooks/useContract";
 
 const supabase = createClient(
@@ -25,7 +27,9 @@ export default function Dashboard() {
   const { address, isConnected } = useAccount();
   const router = useRouter();
   const [activeTab, setActiveTab] = useState("challenge");
+  const [showDepositDetails, setShowDepositDetails] = useState(false);
   const { challenge, isLoading: challengeLoading } = useGetChallenge(address);
+  const { deposit: userDeposit, isLoading: depositLoading } = useGetUserDeposit(address);
 
   useEffect(() => {
     if (!isConnected) {
@@ -44,6 +48,75 @@ export default function Dashboard() {
         <SentientSphere />
       </div>
 
+      {/* Deposit Details Modal */}
+      {showDepositDetails && userDeposit && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm" onClick={() => setShowDepositDetails(false)}>
+          <div className="bg-black border border-accent/30 p-6 max-w-md w-full mx-4" onClick={(e) => e.stopPropagation()}>
+            <div className="flex justify-between items-start mb-4">
+              <h3 className="font-mono text-sm tracking-wider uppercase text-accent">Deposit Details</h3>
+              <button onClick={() => setShowDepositDetails(false)} className="text-muted-foreground hover:text-foreground">✕</button>
+            </div>
+            
+            <div className="space-y-4">
+              <div>
+                <p className="font-mono text-[10px] text-muted-foreground uppercase mb-1">Challenge</p>
+                <p className="font-mono text-lg text-foreground">{userDeposit.challengeType}</p>
+              </div>
+
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <p className="font-mono text-[10px] text-muted-foreground uppercase mb-1">Amount</p>
+                  <p className="font-mono text-xl text-accent">{(Number(userDeposit.assets) / 1e6).toFixed(2)} USDC</p>
+                </div>
+                <div>
+                  <p className="font-mono text-[10px] text-muted-foreground uppercase mb-1">Shares</p>
+                  <p className="font-mono text-lg text-foreground">{(Number(userDeposit.shares) / 1e6).toFixed(6)}</p>
+                </div>
+              </div>
+
+              <div className="border-t border-border/20 pt-4 space-y-2">
+                <div className="flex justify-between font-mono text-xs">
+                  <span className="text-muted-foreground">Deposited</span>
+                  <span className="text-foreground">{new Date(userDeposit.depositTime * 1000).toLocaleString()}</span>
+                </div>
+                <div className="flex justify-between font-mono text-xs">
+                  <span className="text-muted-foreground">Unlocks</span>
+                  <span className={`${Date.now() >= userDeposit.unlockTime * 1000 ? 'text-accent' : 'text-muted-foreground'}`}>
+                    {new Date(userDeposit.unlockTime * 1000).toLocaleString()}
+                  </span>
+                </div>
+                <div className="flex justify-between font-mono text-xs">
+                  <span className="text-muted-foreground">Status</span>
+                  <span className={`${Date.now() >= userDeposit.unlockTime * 1000 ? 'text-accent' : 'text-yellow-500'}`}>
+                    {Date.now() >= userDeposit.unlockTime * 1000 ? '✅ Unlocked' : '🔒 Locked'}
+                  </span>
+                </div>
+              </div>
+
+              {challenge?.active && (
+                <div className="border-t border-border/20 pt-4">
+                  <p className="font-mono text-[10px] text-muted-foreground uppercase mb-2">Challenge Stats</p>
+                  <div className="space-y-2">
+                    <div className="flex justify-between font-mono text-xs">
+                      <span className="text-muted-foreground">Current Streak</span>
+                      <span className="text-accent">{challenge.streak || 0} days</span>
+                    </div>
+                    <div className="flex justify-between font-mono text-xs">
+                      <span className="text-muted-foreground">Longest Streak</span>
+                      <span className="text-foreground">{challenge.longestStreak || 0} days</span>
+                    </div>
+                    <div className="flex justify-between font-mono text-xs">
+                      <span className="text-muted-foreground">Missed Days</span>
+                      <span className="text-destructive">{challenge.missedDays || 0} days</span>
+                    </div>
+                  </div>
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Content */}
       <div className="relative z-10 min-h-screen">
         {/* Header - Fixed on side */}
@@ -59,32 +132,25 @@ export default function Dashboard() {
           {/* Active Challenges */}
           <div className="mt-8">
             <p className="font-mono text-[9px] tracking-[0.3em] text-muted-foreground uppercase mb-3">Active Challenges</p>
-            {challengeLoading ? (
+            {challengeLoading || depositLoading ? (
               <div className="border border-border/20 bg-black/60 backdrop-blur-sm p-4">
                 <p className="font-mono text-[10px] text-muted-foreground">Loading...</p>
               </div>
-            ) : challenge?.active ? (
-              <div className="border border-accent/30 bg-accent/5 backdrop-blur-sm p-4 space-y-2">
-                <div className="flex justify-between items-start">
-                  <p className="font-mono text-[9px] tracking-wider uppercase text-muted-foreground">Challenge</p>
+            ) : userDeposit?.active && Number(userDeposit.shares) > 0 ? (
+              <button
+                onClick={() => setShowDepositDetails(true)}
+                className="w-full border border-accent/30 bg-accent/5 backdrop-blur-sm p-4 text-left hover:bg-accent/10 transition-colors group"
+              >
+                <div className="flex justify-between items-center">
+                  <div>
+                    <p className="font-mono text-xs text-foreground group-hover:text-accent transition-colors">{userDeposit.challengeType}</p>
+                    <p className="font-mono text-[10px] text-muted-foreground mt-1">
+                      {(Number(userDeposit.assets) / 1e6).toFixed(2)} USDC • Click for details
+                    </p>
+                  </div>
                   <span className="font-mono text-[8px] px-2 py-1 border border-accent/40 text-accent uppercase">Active</span>
                 </div>
-                <p className="font-mono text-xs text-foreground">{challenge.type}</p>
-                <div className="pt-2 border-t border-border/10 space-y-1">
-                  <div className="flex justify-between font-mono text-[10px]">
-                    <span className="text-muted-foreground">Streak</span>
-                    <span className="text-accent">{challenge.currentStreak || 0} days</span>
-                  </div>
-                  <div className="flex justify-between font-mono text-[10px]">
-                    <span className="text-muted-foreground">Longest</span>
-                    <span className="text-foreground">{challenge.longestStreak || 0} days</span>
-                  </div>
-                  <div className="flex justify-between font-mono text-[10px]">
-                    <span className="text-muted-foreground">Missed</span>
-                    <span className="text-destructive">{challenge.missedDays || 0} days</span>
-                  </div>
-                </div>
-              </div>
+              </button>
             ) : (
               <div className="border border-border/20 bg-black/60 backdrop-blur-sm p-4">
                 <p className="font-mono text-[10px] text-muted-foreground">No active challenges</p>
@@ -162,10 +228,19 @@ function LaunchChallengeTab({ address }: { address?: string }) {
   const [durationValue, setDurationValue] = useState("2");
   const [durationUnit, setDurationUnit] = useState("minutes");
   const [depositAmount, setDepositAmount] = useState("");
+  const [ensAddress, setEnsAddress] = useState("");
   const [loading, setLoading] = useState(false);
   const [status, setStatus] = useState("");
 
   const { deposit } = useDepositUSDC();
+
+  // Load saved ENS from localStorage
+  useEffect(() => {
+    const savedEns = localStorage.getItem("userEnsAddress");
+    if (savedEns) {
+      setEnsAddress(savedEns);
+    }
+  }, []);
 
   const socialMediaApps = [
     "Instagram",
@@ -217,15 +292,23 @@ function LaunchChallengeTab({ address }: { address?: string }) {
       return;
     }
 
+    if (!ensAddress || ensAddress.trim() === "") {
+      setStatus("❌ Please enter your ENS address or username for mobile app tracking");
+      return;
+    }
+
     setLoading(true);
     setStatus("🚀 Creating challenge and depositing USDC...");
     
     try {
+      // Save ENS address to localStorage for Monitor tab
+      localStorage.setItem("userEnsAddress", ensAddress.trim());
+      
       // Call deposit which will create challenge + deposit in vault
       const tx = await deposit(depositAmount, address, durationInSeconds, `No ${challengeType}`);
-      setStatus(`SUCCESS\n\nChallenge created and funds deposited.\nTransaction: ${tx?.slice(0, 10)}...\n\nSwitch to Monitor tab to verify tracking.`);
+      setStatus(`SUCCESS\n\nChallenge created and funds deposited.\nTransaction: ${tx?.slice(0, 10)}...\n\nYour ENS/Username: ${ensAddress}\nMake sure your mobile app uses this same identifier.\n\nSwitch to Monitor tab to verify tracking.`);
       
-      // Reset form
+      // Reset form (but keep ENS)
       setDepositAmount("");
       setDurationValue("5");
       setDurationUnit("minutes");
@@ -366,6 +449,24 @@ function LaunchChallengeTab({ address }: { address?: string }) {
         </div>
       </div>
 
+      {/* ENS Address / Username */}
+      <div className="mb-8">
+        <label className="block font-mono text-[10px] tracking-[0.2em] uppercase text-muted-foreground mb-4">
+          ENS Address / Mobile App Username
+        </label>
+        <input
+          type="text"
+          value={ensAddress}
+          onChange={(e) => setEnsAddress(e.target.value)}
+          placeholder="yourname.eth or unique username"
+          className="w-full bg-background border border-border/30 px-4 py-3 text-foreground font-mono text-sm focus:outline-none focus:border-accent transition-colors"
+          disabled={loading}
+        />
+        <p className="text-xs text-muted-foreground mt-2">
+          This must match the <span className="font-mono text-accent">user_id</span> field configured in your mobile app.
+        </p>
+      </div>
+
       {/* Deposit Amount */}
       <div className="mb-8">
         <label className="block font-mono text-[10px] tracking-[0.2em] uppercase text-muted-foreground mb-4">Deposit Amount (USDC)</label>
@@ -458,38 +559,83 @@ function MonitorTab({ address }: { address?: string }) {
   const [forbiddenApps, setForbiddenApps] = useState<string[]>([]);
   const [isCompliant, setIsCompliant] = useState<boolean | null>(null);
   const [autoRefresh, setAutoRefresh] = useState(false);
+  const [userEnsAddress, setUserEnsAddress] = useState<string>("");
+  const { challenge } = useGetChallenge(address);
+
+  // Load ENS from localStorage
+  useEffect(() => {
+    const savedEns = localStorage.getItem("userEnsAddress");
+    if (savedEns) {
+      setUserEnsAddress(savedEns);
+    }
+  }, []);
 
   const handleCheckCompliance = async () => {
     if (!address) return;
+
+    if (!userEnsAddress || userEnsAddress.trim() === "") {
+      alert("Please set your ENS address in the Launch tab first");
+      return;
+    }
     
     setChecking(true);
     try {
-      // First, test if Supabase is working
-      const now = new Date();
-      const last24h = new Date(now.getTime() - 24 * 60 * 60 * 1000);
+      // Get challenge time window
+      const challengeStartTime = challenge?.startTime 
+        ? new Date(challenge.startTime * 1000) 
+        : new Date(Date.now() - 24 * 60 * 60 * 1000);
+      
+      const challengeEndTime = challenge?.startTime && challenge?.duration
+        ? new Date((challenge.startTime + challenge.duration) * 1000)
+        : new Date();
 
       console.log("🔍 Querying Supabase...");
       console.log("📍 URL:", process.env.NEXT_PUBLIC_SUPABASE_URL);
-      console.log("👤 User:", address.toLowerCase());
+      console.log("👤 ENS/User ID:", userEnsAddress);
+      console.log("👤 Wallet:", address.toLowerCase());
+      console.log("⏰ Challenge Window:", challengeStartTime.toLocaleString(), "to", challengeEndTime.toLocaleString());
 
-      // TEMPORARY: Using placeholder user_id from your mobile app
-      const userId = "user_wallet_address_or_ens"; // TODO: Update mobile app to use actual wallet address
+      // First, test connection with a simple query (no filters)
+      const { data: testData, error: testError } = await supabase
+        .from("usage_records")
+        .select("*", { count: 'exact', head: false })
+        .limit(1);
 
+      if (testError) {
+        console.error("❌ Supabase connection error:", testError);
+        setSupabaseConnected(false);
+        throw new Error(`Supabase connection failed: ${testError.message}`);
+      }
+
+      console.log("✅ Supabase connection successful!");
+      setSupabaseConnected(true);
+
+      // Query by user_id field (matches ENS/username from mobile app)
       const { data, error } = await supabase
         .from("usage_records")
         .select("*")
-        .eq("user_id", userId)
-        .gte("created_at", last24h.toISOString());
+        .eq("user_id", userEnsAddress.trim())
+        .gte("timestamp", challengeStartTime.toISOString())
+        .lte("timestamp", challengeEndTime.toISOString());
 
       if (error) {
-        console.error("❌ Supabase error:", error);
-        console.error("Error details:", JSON.stringify(error, null, 2));
-        setSupabaseConnected(false);
-        throw new Error(`Supabase error: ${error.message || JSON.stringify(error)}`);
+        console.error("❌ Query error:", error);
+        // Connection is fine, just the query had issues
+        setAppUsage([]);
+        setLastCheck(new Date().toLocaleTimeString());
+        setIsCompliant(true); // Default to compliant if no data
+        return;
       }
 
-      console.log("✅ Supabase connected! Data received:", data);
-      setSupabaseConnected(true);
+      console.log("📊 Records found:", data?.length || 0);
+      
+      if (!data || data.length === 0) {
+        console.log("⚠️ No records found for ENS/User ID:", userEnsAddress);
+        console.log("💡 Make sure your mobile app is:");
+        console.log("   1. Sending data to Supabase");
+        console.log("   2. Using user_id field with value:", userEnsAddress.trim());
+      }
+
       setAppUsage(data || []);
       setLastCheck(new Date().toLocaleTimeString());
 
@@ -558,11 +704,21 @@ function MonitorTab({ address }: { address?: string }) {
            supabaseConnected === false ? "Cannot connect to Supabase - check credentials" :
            "Click Check Compliance to test connection"}
         </p>
+        
         <div className="mt-4 text-[10px] font-mono border border-border/10 p-3 space-y-1">
           <p className="text-muted-foreground">URL: {process.env.NEXT_PUBLIC_SUPABASE_URL || "NOT SET"}</p>
           <p className="text-muted-foreground">Key: {process.env.NEXT_PUBLIC_SUPABASE_KEY ? "Set" : "NOT SET"}</p>
           <p className="text-muted-foreground">Table: usage_records</p>
-          <p className="text-muted-foreground">User: {address?.toLowerCase() || "No wallet"}</p>
+          <p className="text-muted-foreground">Query Field: user_id</p>
+          <p className="text-accent">ENS/User ID: {userEnsAddress || "Not set - configure in Launch tab"}</p>
+          <p className="text-muted-foreground">Wallet: {address?.toLowerCase() || "No wallet"}</p>
+          {challenge?.active && (
+            <>
+              <p className="text-accent mt-2">Challenge: {challenge.type}</p>
+              <p className="text-accent">Duration: {Math.floor(challenge.duration / 60)} minutes</p>
+              <p className="text-accent">Started: {new Date(challenge.startTime * 1000).toLocaleString()}</p>
+            </>
+          )}
         </div>
       </div>
 
@@ -625,7 +781,7 @@ function MonitorTab({ address }: { address?: string }) {
             {appUsage.slice(0, 20).map((record: any, idx: number) => (
               <div key={idx} className="flex justify-between items-center pb-2 border-b border-border/10">
                 <span className="font-mono text-xs text-foreground">{record.app_name || record.package_name}</span>
-                <span className="font-mono text-[10px] text-muted-foreground">{new Date(record.created_at).toLocaleTimeString()}</span>
+                <span className="font-mono text-[10px] text-muted-foreground">{new Date(record.timestamp).toLocaleTimeString()}</span>
               </div>
             ))}
           </div>
@@ -635,9 +791,18 @@ function MonitorTab({ address }: { address?: string }) {
         </div>
       )}
 
-      {supabaseConnected === true && appUsage.length === 0 && isCompliant === null && (
-        <div className="border border-border/20 p-6 mb-8">
-          <p className="text-sm text-muted-foreground">No app usage data found yet. Make sure you have installed the tracking app on your phone.</p>
+      {supabaseConnected === true && appUsage.length === 0 && lastCheck && (
+        <div className="border border-border/20 bg-black/40 p-6 mb-8">
+          <p className="font-mono text-xs tracking-wider uppercase text-muted-foreground mb-3">NO DATA FOUND</p>
+          <p className="text-sm text-muted-foreground mb-4">No app usage records found for ENS: <span className="font-mono text-accent">{userEnsAddress}</span></p>
+          <div className="text-xs text-muted-foreground space-y-2 border-l-2 border-border/20 pl-4">
+            <p>💡 To enable tracking:</p>
+            <p>1. Install the No-Scroll mobile app on your phone</p>
+            <p>2. Configure the app to use user_id: <span className="font-mono text-accent">{userEnsAddress}</span></p>
+            <p>3. Grant app usage permissions</p>
+            <p>4. The app will automatically send data to Supabase</p>
+            <p className="mt-2 text-muted-foreground/70">📝 Your wallet: <span className="font-mono">{address?.toLowerCase()}</span></p>
+          </div>
         </div>
       )}
 

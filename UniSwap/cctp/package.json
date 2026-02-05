@@ -1,0 +1,23 @@
+{
+  "name": "no-scroll-savings-bridge",
+  "version": "1.0.0",
+  "description": "CCTP Bridge Service for No-Scroll Savings (Arc → Sepolia)",
+  "main": "index.js",
+  "scripts": {
+    "start": "tsx index.ts watch",
+    "test": "tsx index.ts test",
+    "bridge": "tsx index.ts test"
+  },
+  "keywords": ["cctp", "bridge", "arc", "sepolia", "uniswap"],
+  "author": "",
+  "license": "ISC",
+  "type": "commonjs",
+  "dependencies": {
+    "@circle-fin/adapter-viem-v2": "^1.4.0",
+    "@circle-fin/bridge-kit": "^1.5.0",
+    "dotenv": "^17.2.3",
+    "tsx": "^4.21.0",
+    "typescript": "^5.9.3",
+    "viem": "^2.45.1"
+  }
+}

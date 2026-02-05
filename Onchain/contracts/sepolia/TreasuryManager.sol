@@ -47,15 +47,8 @@ contract TreasuryManager is Ownable {
     function receiveFunds(uint256 amount) external onlyBackend {
         totalReceived += amount;
         
-        uint256 toAave = (amount * 60) / 100;
-        uint256 toUniswap = (amount * 30) / 100;
-        
-        if (aavePool != address(0) && toAave > 0) {
-            USDC.forceApprove(aavePool, toAave);
-            IAavePool(aavePool).supply(address(USDC), toAave, address(this), 0);
-            totalInAave += toAave;
-            emit DeployedToAave(toAave);
-        }
+        // Deploy 100% to Uniswap (ignoring Aave for demo)
+        uint256 toUniswap = amount; // 100% to Uniswap v4
         
         if (uniswapV4Agent != address(0) && toUniswap > 0) {
             USDC.forceApprove(uniswapV4Agent, toUniswap);

@@ -24,7 +24,7 @@ contract SavingsVault is ERC4626, ERC20Permit, Ownable, ReentrancyGuard {
     
     /* ========== CONSTANTS ========== */
     
-    uint256 public constant MIN_DEPOSIT = 10 * 10**6; // 10 USDC
+    uint256 public constant MIN_DEPOSIT = 5 * 10**6; // 5 USDC
     uint256 public constant TWO_MINUTES = 2 minutes;   // 120 seconds
      uint256 public constant ONE_DAY = 1 days; 
     uint256 public constant ONE_HOUR = 1 hours;        // 3600 seconds
@@ -410,6 +410,27 @@ contract SavingsVault is ERC4626, ERC20Permit, Ownable, ReentrancyGuard {
         hubMetrics.totalPooledOnArc -= amount;
     }
     
+    /**
+     * @notice Transfer USDC from vault to backend for CCTP bridging
+     * @param bridgeRequestId The bridge request ID from deposit event
+     * @param amount Amount of USDC to transfer
+     */
+    function transferForCCTPBridge(
+        bytes32 bridgeRequestId,
+        uint256 amount
+    ) external onlyBackend {
+        require(amount <= IERC20(asset()).balanceOf(address(this)), "Insufficient vault balance");
+        require(amount <= hubMetrics.arcBuffer, "Insufficient buffer");
+        
+        // Transfer USDC to backend for bridging
+        IERC20(asset()).safeTransfer(backend, amount);
+        
+        // Don't reduce arcBuffer or totalPooledOnArc yet - they're still "in the system"
+        // Just being moved to Sepolia via bridge
+        
+        emit FundsBridgedToSepolia(amount, bridgeRequestId);
+    }
+    
     /* ========== VIEW FUNCTIONS ========== */
     
     function getHubMetrics() external view returns (
@@ -485,6 +506,21 @@ contract SavingsVault is ERC4626, ERC20Permit, Ownable, ReentrancyGuard {
         if (!supportedChains[chainId]) {
             supportedChains[chainId] = true;
             totalSupportedChains++;
+        }
+    }
+    
+    /**
+     * @notice Admin function to reset stale deposit metadata
+     * @dev Use when hasActiveDeposit is true but shares are 0
+     */
+    function resetDepositMetadata(address user) external onlyOwner {
+        DepositMetadata storage metadata = depositMetadata[user];
+        require(metadata.hasActiveDeposit, "No active deposit to reset");
+        require(balanceOf(user) == 0, "User still has shares");
+        
+        metadata.hasActiveDeposit = false;
+        if (hubMetrics.activeDeposits > 0) {
+            hubMetrics.activeDeposits -= 1;
         }
     }
     

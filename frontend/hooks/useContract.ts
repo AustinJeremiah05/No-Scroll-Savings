@@ -174,3 +174,29 @@ export function useGetBalance(user?: string) {
     error,
   };
 }
+
+export function useGetUserDeposit(user?: string) {
+  const { data, isLoading, error, refetch } = useReadContract({
+    address: CONTRACTS.SAVINGS_VAULT as `0x${string}`,
+    abi: SAVINGS_VAULT_ABI,
+    functionName: "getUserDeposit",
+    args: user ? [user as `0x${string}`] : undefined,
+    query: { enabled: !!user },
+  });
+
+  return {
+    deposit: data
+      ? {
+          shares: data[0],
+          assets: data[1],
+          depositTime: Number(data[2]),
+          unlockTime: Number(data[3]),
+          challengeType: data[4],
+          active: data[5],
+        }
+      : null,
+    isLoading,
+    error,
+    refetch,
+  };
+}

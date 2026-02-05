@@ -17,7 +17,7 @@ const arcTestnet = defineChain({
   },
   rpcUrls: {
     default: {
-      http: ['https://rpc-arc-testnet.gelato.digital'],
+      http: ['https://rpc.testnet.arc.network'],
     },
   },
   blockExplorers: {
