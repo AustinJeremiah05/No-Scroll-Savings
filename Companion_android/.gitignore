@@ -1,0 +1,14 @@
+*.iml
+
+local.properties
+.DS_Store
+build/
+captures/
+.externalNativeBuild/
+.cxx/
+*.apk
+*.ap_
+*.aab
+*.dex
+*.class
+*.log
