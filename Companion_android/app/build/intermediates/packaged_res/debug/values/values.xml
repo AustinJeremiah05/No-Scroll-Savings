@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <color name="black">#FF000000</color>
+    <color name="ic_launcher_background">#6200EE</color>
+    <color name="md_theme_light_onPrimary">#FFFFFF</color>
+    <color name="md_theme_light_primary">#6200EE</color>
+    <color name="purple_500">#A78BFA</color>
+    <color name="purple_700">#7C3AED</color>
+    <color name="white">#FFFFFFFF</color>
+    <string name="app_name">Digital Wellbeing Viewer</string>
+    <string name="app_title">Your Digital Wellbeing</string>
+    <string name="custom_range">Custom</string>
+    <string name="grant_permission">Open Settings</string>
+    <string name="no_usage_data">No usage data available for the selected time range.</string>
+    <string name="one_hour">1 Hour</string>
+    <string name="permission_required_message">This app needs Usage Access permission to display your screen time data.\n\nTap the button below to open Settings and grant permission to this app.</string>
+    <string name="refresh">Refresh Data</string>
+    <string name="select_time_range">Select Time Range:</string>
+    <string name="seven_days">7 Days</string>
+    <string name="total_screen_time">Total screen time: 0h 0m</string>
+    <string name="twenty_four_hours">24 Hours</string>
+    <style name="Base.Theme.DigitalWellbeingViewer" parent="Theme.Material3.DayNight.NoActionBar">
+        
+        <item name="colorPrimary">@color/md_theme_light_primary</item>
+    </style>
+    <style name="Theme.DigitalWellbeingViewer" parent="Base.Theme.DigitalWellbeingViewer"/>
+</resources>

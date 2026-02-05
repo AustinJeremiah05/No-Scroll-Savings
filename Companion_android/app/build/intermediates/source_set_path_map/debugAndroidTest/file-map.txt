@@ -1,0 +1,6 @@
+com.example.digitalwellbeingviewer.test.app-jetified-annotation-experimental-1.3.0-0 C:\Users\Sugan\.gradle\caches\transforms-3\97805ff41c1c24a800902d8801d3ae9f\transformed\jetified-annotation-experimental-1.3.0\res
+com.example.digitalwellbeingviewer.test.app-jetified-core-1.5.0-1 C:\Users\Sugan\.gradle\caches\transforms-3\a2bfccd9beaa203e341272be2b1ea150\transformed\jetified-core-1.5.0\res
+com.example.digitalwellbeingviewer.test.app-androidTest-2 C:\Users\Sugan\projects\new\Companion-avoidifi\app\build\generated\res\resValues\androidTest\debug
+com.example.digitalwellbeingviewer.test.app-mergeDebugAndroidTestResources-3 C:\Users\Sugan\projects\new\Companion-avoidifi\app\build\intermediates\incremental\debugAndroidTest\mergeDebugAndroidTestResources\merged.dir
+com.example.digitalwellbeingviewer.test.app-mergeDebugAndroidTestResources-4 C:\Users\Sugan\projects\new\Companion-avoidifi\app\build\intermediates\incremental\debugAndroidTest\mergeDebugAndroidTestResources\stripped.dir
+com.example.digitalwellbeingviewer.test.app-merged_res-5 C:\Users\Sugan\projects\new\Companion-avoidifi\app\build\intermediates\merged_res\debugAndroidTest

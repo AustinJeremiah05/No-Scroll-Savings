@@ -2,6 +2,10 @@
 
 A simple Android app built with Kotlin that displays your phone's Digital Wellbeing data (screen time per app) directly on your device.
 
+## 📥 Quick Download
+
+**[Download app-debug.apk](./app-debug.apk)** - Ready to install on your Android device!
+
 ## Features
 
 - ✅ View per-app screen time for different time ranges (1 hour, 24 hours, 7 days, custom)
@@ -31,7 +35,32 @@ This app uses Android's **UsageStatsManager** API to read usage statistics from 
    - See [SUPABASE_SETUP.md](SUPABASE_SETUP.md) for detailed setup instructions
    - Update `SupabaseClient.kt` with your credentials
 
-### Option 1: Build in Android Studio (Recommended)
+### Option 1: Download Pre-built APK (Quickest)
+
+**Download the latest debug APK:**
+- [app-debug.apk](./app-debug.apk) - Download and install directly on your Android device
+
+**Installation Steps:**
+
+1. **Download the APK** to your Android device
+   - You can transfer it via USB, email, or download directly on your phone
+
+2. **Enable "Install Unknown Apps"**
+   - Go to Settings → Security (or Apps)
+   - Find "Install unknown apps" or "Unknown sources"
+   - Allow installation from your browser/file manager
+
+3. **Install the APK**
+   - Open the downloaded `app-debug.apk` file
+   - Tap "Install"
+   - Wait for installation to complete
+   - Tap "Open" to launch the app
+
+4. **Grant Usage Access Permission** (see below)
+
+> **Note:** You may see a warning that this is an unsigned/debug app. This is normal for debug builds. Tap "Install anyway" to proceed.
+
+### Option 2: Build in Android Studio (Recommended for Developers)
 
 1. **Install Android Studio**  
    Download from: https://developer.android.com/studio
@@ -59,7 +88,7 @@ This app uses Android's **UsageStatsManager** API to read usage statistics from 
    - Select your device from the list
    - Wait for the app to install and launch
 
-### Option 2: Build from Command Line
+### Option 3: Build from Command Line
 
 ```powershell
 # Navigate to project directory
