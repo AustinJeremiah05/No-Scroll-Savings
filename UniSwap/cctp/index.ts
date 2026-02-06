@@ -772,8 +772,20 @@ const processDeposit = async (
     const isInsufficientBalance = err?.message?.includes("Insufficient vault balance") || 
                                   err?.cause?.reason?.includes("Insufficient vault balance");
     
+    // Check if error is bridge-related - never retry bridge failures
+    const isBridgeError = err?.message?.includes("Bridge") || 
+                          err?.message?.includes("CCTP") ||
+                          err?.message?.includes("attestation") ||
+                          err?.message?.includes("mint") ||
+                          err?.message?.includes("burn");
+    
     if (isInsufficientBalance) {
       console.error("   ⚠️  Vault has insufficient balance - deposit may have been processed already.");
+      console.error("   ❌ Marking as permanently failed to prevent retries.\n");
+      newRetryCount = MAX_RETRIES; // Set to max to prevent retries
+      processedDeposits.add(bridgeRequestId);
+    } else if (isBridgeError) {
+      console.error("   ⚠️  Bridge operation failed - will not retry bridge operations.");
       console.error("   ❌ Marking as permanently failed to prevent retries.\n");
       newRetryCount = MAX_RETRIES; // Set to max to prevent retries
       processedDeposits.add(bridgeRequestId);
@@ -933,8 +945,20 @@ const processRedemption = async (
     const isInsufficientBalance = err?.message?.includes("Insufficient") || 
                                   err?.cause?.reason?.includes("Insufficient");
     
+    // Check if error is bridge-related - never retry bridge failures
+    const isBridgeError = err?.message?.includes("Bridge") || 
+                          err?.message?.includes("CCTP") ||
+                          err?.message?.includes("attestation") ||
+                          err?.message?.includes("mint") ||
+                          err?.message?.includes("burn");
+    
     if (isInsufficientBalance) {
       console.error("   ⚠️  Insufficient funds - redemption may have been processed already.");
+      console.error("   ❌ Marking as permanently failed to prevent retries.\n");
+      newRetryCount = MAX_RETRIES; // Set to max to prevent retries
+      processedRedemptions.add(requestId);
+    } else if (isBridgeError) {
+      console.error("   ⚠️  Bridge operation failed - will not retry bridge operations.");
       console.error("   ❌ Marking as permanently failed to prevent retries.\n");
       newRetryCount = MAX_RETRIES; // Set to max to prevent retries
       processedRedemptions.add(requestId);
