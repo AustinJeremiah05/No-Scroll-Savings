@@ -6,7 +6,7 @@
 ```
 NoScrollSavingsHook:    0x932e5f3e72D7cC0FBcF0E82283e310EEb2cba727
 YieldStrategyManager:   0xa6b00bAE312cBa98Aea60057EcbF2506114e4764
-UniswapV4Agent:         0xBABe158C1c2B674dD31bb404A2A2Ec1f144a57B6 (Simplified - holds USDC)
+UniswapV4Agent:         0x4A8DeCD2B05b29F27feD0E2E9680d8Ed299Dc927 (0.3% fee tier: 3000/60)
 TreasuryManager:        0xbE51ad59f4a68089fc86697c7d5EFe756268F0d9
 ```
 
@@ -194,7 +194,7 @@ If you have a separate backend service, update its `.env`:
 
 ```env
 TREASURY_MANAGER_SEPOLIA=0xbE51ad59f4a68089fc86697c7d5EFe756268F0d9
-UNISWAP_V4_AGENT_SEPOLIA=0xBABe158C1c2B674dD31bb404A2A2Ec1f144a57B6
+UNISWAP_V4_AGENT_SEPOLIA=0x4A8DeCD2B05b29F27feD0E2E9680d8Ed299Dc927
 SAVINGS_VAULT_ARC=0xF4df10e373E509EC3d96237df91bE9B0006E918D
 ```
 
@@ -217,7 +217,7 @@ Before going live with real funds:
 
 ### Your Deployed Contracts
 - [TreasuryManager](https://sepolia.etherscan.io/address/0xbE51ad59f4a68089fc86697c7d5EFe756268F0d9)
-- [UniswapV4Agent](https://sepolia.etherscan.io/address/0xBABe158C1c2B674dD31bb404A2A2Ec1f144a57B6)
+- [UniswapV4Agent](https://sepolia.etherscan.io/address/0x4A8DeCD2B05b29F27feD0E2E9680d8Ed299Dc927)
 - [NoScrollSavingsHook](https://sepolia.etherscan.io/address/0x932e5f3e72D7cC0FBcF0E82283e310EEb2cba727)
 - [YieldStrategyManager](https://sepolia.etherscan.io/address/0xa6b00bAE312cBa98Aea60057EcbF2506114e4764)
 

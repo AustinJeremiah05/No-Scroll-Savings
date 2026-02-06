@@ -1,7 +1,7 @@
 import { ethers } from "hardhat";
 
 const TREASURY_MANAGER = "0xbE51ad59f4a68089fc86697c7d5EFe756268F0d9";
-const NEW_AGENT = "0xBABe158C1c2B674dD31bb404A2A2Ec1f144a57B6";
+const NEW_AGENT = "0x4A8DeCD2B05b29F27feD0E2E9680d8Ed299Dc927";
 
 async function main() {
   console.log("\n🔍 Checking TreasuryManager Configuration");

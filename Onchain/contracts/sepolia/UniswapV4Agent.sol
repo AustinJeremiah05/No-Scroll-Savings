@@ -32,11 +32,11 @@ contract UniswapV4Agent is Ownable, ReentrancyGuard, IUnlockCallback {
     
     // Uniswap v4 Pool configuration
     PoolKey public usdcWethPool;
-    // For USDC-only liquidity: range below current price (tick 0 at 1:1)
-    // Current price ABOVE range = 100% currency0 (USDC)
-    // Ticks must be multiples of tickSpacing (200)
-    int24 public constant TICK_LOWER = -887200; // Min valid tick (multiple of 200)
-    int24 public constant TICK_UPPER = -200;     // Just below current price
+    // For USDC-only liquidity: range below current price
+    // Ticks must be multiples of tickSpacing (60 for 0.3% fee tier)
+    // Using wide range for single-sided USDC deposit
+    int24 public constant TICK_LOWER = -887220; // Min valid tick (multiple of 60)
+    int24 public constant TICK_UPPER = -60;     // Just below current tick for single-sided USDC
     bytes32 public constant POSITION_SALT = bytes32(uint256(1));
     
     // Pool tracking
@@ -101,8 +101,8 @@ contract UniswapV4Agent is Ownable, ReentrancyGuard, IUnlockCallback {
         usdcWethPool = PoolKey({
             currency0: currency0,
             currency1: currency1,
-            fee: 10000, // 1% fee = 10000 bips (higher fees = more yield for 3 min)
-            tickSpacing: 200, // 1% fee tier uses 200 tick spacing
+            fee: 3000, // 0.3% fee = 3000 bips (standard fee tier)
+            tickSpacing: 60, // 0.3% fee tier uses 60 tick spacing
             hooks: address(0) // No hooks
         });
         
