@@ -285,10 +285,20 @@ export function useEnsRegistration() {
 
       localStorage.removeItem(`ens-${cleanName}`)
       
-      setRegisteredName(`${cleanName}.eth`)
+      const fullEnsName = `${cleanName}.eth`
+      setRegisteredName(fullEnsName)
       setRegistrationHash(registerTxHash)
       setCurrentStep('idle')
       setIsLoading(false)
+
+      // Save registered ENS name to localStorage for dashboard
+      localStorage.setItem('userEnsAddress', fullEnsName)
+      console.log('✅ ENS registered and saved to localStorage:', fullEnsName)
+
+      // Dispatch custom event to notify dashboard immediately
+      if (typeof window !== 'undefined') {
+        window.dispatchEvent(new CustomEvent('ensRegistered', { detail: fullEnsName }))
+      }
 
       return true
     } catch (err) {
