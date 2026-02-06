@@ -29,7 +29,7 @@ export default function Dashboard() {
   const [activeTab, setActiveTab] = useState("challenge");
   const [showDepositDetails, setShowDepositDetails] = useState(false);
   const { challenge, isLoading: challengeLoading } = useGetChallenge(address);
-  const { deposit: userDeposit, isLoading: depositLoading } = useGetUserDeposit(address);
+  const { deposit: userDeposit, isLoading: depositLoading, refetch: refetchDeposit } = useGetUserDeposit(address);
 
   useEffect(() => {
     if (!isConnected) {
@@ -211,7 +211,7 @@ export default function Dashboard() {
 
             {/* Tab Content */}
             <div className="p-8">
-              {activeTab === "launch" && <LaunchChallengeTab address={address} />}
+              {activeTab === "launch" && <LaunchChallengeTab address={address} refetchDeposit={refetchDeposit} />}
               {activeTab === "monitor" && <MonitorTab address={address} />}
               {activeTab === "withdraw" && <WithdrawTab address={address} />}
               {activeTab === "stats" && <StatsTab address={address} />}
@@ -223,7 +223,7 @@ export default function Dashboard() {
   );
 }
 
-function LaunchChallengeTab({ address }: { address?: string }) {
+function LaunchChallengeTab({ address, refetchDeposit }: { address?: string; refetchDeposit?: () => void }) {
   const [challengeType, setChallengeType] = useState("Instagram");
   const [durationValue, setDurationValue] = useState("2");
   const [durationUnit, setDurationUnit] = useState("minutes");
@@ -307,6 +307,11 @@ function LaunchChallengeTab({ address }: { address?: string }) {
       // Call deposit which will create challenge + deposit in vault
       const tx = await deposit(depositAmount, address, durationInSeconds, `No ${challengeType}`);
       setStatus(`SUCCESS\n\nChallenge created and funds deposited.\nTransaction: ${tx?.slice(0, 10)}...\n\nYour ENS/Username: ${ensAddress}\nMake sure your mobile app uses this same identifier.\n\nSwitch to Monitor tab to verify tracking.`);
+      
+      // Refetch deposit data to update UI
+      if (refetchDeposit) {
+        setTimeout(() => refetchDeposit(), 2000); // Wait 2s for block confirmation
+      }
       
       // Reset form (but keep ENS)
       setDepositAmount("");
@@ -394,6 +399,16 @@ function LaunchChallengeTab({ address }: { address?: string }) {
               className="px-3 py-2 border border-border/30 hover:border-accent hover:text-accent disabled:opacity-30 text-xs font-mono tracking-wide transition-all"
             >
               2 Min
+            </button>
+            <button
+              onClick={() => {
+                setDurationValue("6");
+                setDurationUnit("minutes");
+              }}
+              disabled={loading}
+              className="px-3 py-2 border border-border/30 hover:border-accent hover:text-accent disabled:opacity-30 text-xs font-mono tracking-wide transition-all"
+            >
+              6 Min
             </button>
             <button
               onClick={() => {
@@ -611,12 +626,18 @@ function MonitorTab({ address }: { address?: string }) {
       setSupabaseConnected(true);
 
       // Query by user_id field (matches ENS/username from mobile app)
+      // Convert dates to Unix timestamps (milliseconds) for bigint comparison
+      const startTimestamp = challengeStartTime.getTime();
+      const endTimestamp = challengeEndTime.getTime();
+      
+      console.log("📅 Timestamp range:", startTimestamp, "to", endTimestamp);
+
       const { data, error } = await supabase
         .from("usage_records")
         .select("*")
         .eq("user_id", userEnsAddress.trim())
-        .gte("timestamp", challengeStartTime.toISOString())
-        .lte("timestamp", challengeEndTime.toISOString());
+        .gte("timestamp", startTimestamp)
+        .lte("timestamp", endTimestamp);
 
       if (error) {
         console.error("❌ Query error:", error);

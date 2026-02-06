@@ -181,7 +181,10 @@ export function useGetUserDeposit(user?: string) {
     abi: SAVINGS_VAULT_ABI,
     functionName: "getUserDeposit",
     args: user ? [user as `0x${string}`] : undefined,
-    query: { enabled: !!user },
+    query: { 
+      enabled: !!user,
+      refetchInterval: 5000, // Poll every 5 seconds
+    },
   });
 
   return {

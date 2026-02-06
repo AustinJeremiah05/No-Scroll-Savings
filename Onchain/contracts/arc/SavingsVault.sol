@@ -26,6 +26,7 @@ contract SavingsVault is ERC4626, ERC20Permit, Ownable, ReentrancyGuard {
     
     uint256 public constant MIN_DEPOSIT = 5 * 10**6; // 5 USDC
     uint256 public constant TWO_MINUTES = 2 minutes;   // 120 seconds
+    uint256 public constant SIX_MINUTES = 6 minutes;   // 360 seconds
      uint256 public constant ONE_DAY = 1 days; 
     uint256 public constant ONE_HOUR = 1 hours;        // 3600 seconds
     uint256 public constant ONE_WEEK = 7 days;
@@ -194,6 +195,7 @@ contract SavingsVault is ERC4626, ERC20Permit, Ownable, ReentrancyGuard {
         require(assets >= MIN_DEPOSIT, "Below minimum deposit");
         require(
             lockDuration == TWO_MINUTES || 
+            lockDuration == SIX_MINUTES || 
             lockDuration == ONE_HOUR ||
             lockDuration == ONE_DAY ||
             lockDuration == ONE_WEEK || 
