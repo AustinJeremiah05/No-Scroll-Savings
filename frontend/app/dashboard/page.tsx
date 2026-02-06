@@ -1,7 +1,8 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { useAccount } from "wagmi";
+import { useAccount, useEnsName } from "wagmi";
+import { mainnet, sepolia } from "wagmi/chains";
 import { useRouter } from "next/navigation";
 import { createClient } from "@supabase/supabase-js";
 import { SentientSphere } from "@/components/sentient-sphere";
@@ -234,13 +235,80 @@ function LaunchChallengeTab({ address, refetchDeposit }: { address?: string; ref
 
   const { deposit } = useDepositUSDC();
 
-  // Load saved ENS from localStorage
-  useEffect(() => {
-    const savedEns = localStorage.getItem("userEnsAddress");
-    if (savedEns) {
-      setEnsAddress(savedEns);
+  // Fetch ENS name from blockchain using wallet address
+  const { data: mainnetEnsName, isLoading: mainnetLoading } = useEnsName({
+    address: address as `0x${string}` | undefined,
+    chainId: mainnet.id,
+    query: {
+      enabled: !!address,
     }
-  }, []);
+  });
+
+  const { data: sepoliaEnsName, isLoading: sepoliaLoading } = useEnsName({
+    address: address as `0x${string}` | undefined,
+    chainId: sepolia.id,
+    query: {
+      enabled: !!address && !mainnetEnsName,
+    }
+  });
+
+  const isLoadingEns = mainnetLoading || sepoliaLoading;
+  const blockchainEnsName = mainnetEnsName || sepoliaEnsName;
+
+  // Load ENS from blockchain or localStorage and listen for updates
+  useEffect(() => {
+    // Priority 1: Use blockchain-fetched ENS name (most reliable)
+    if (blockchainEnsName && !isLoadingEns) {
+      setEnsAddress(blockchainEnsName);
+      localStorage.setItem("userEnsAddress", blockchainEnsName);
+      console.log('🔗 ENS fetched from blockchain:', blockchainEnsName);
+      return;
+    }
+
+    // Priority 2: Load from localStorage (if no blockchain ENS found)
+    const savedEns = localStorage.getItem("userEnsAddress");
+    if (savedEns && !blockchainEnsName && !isLoadingEns) {
+      setEnsAddress(savedEns);
+      console.log('📥 Loaded ENS from localStorage:', savedEns);
+    }
+  }, [blockchainEnsName, isLoadingEns]);
+
+  // Listen for real-time updates from ENS registration modal
+  useEffect(() => {
+    // Listen for storage events (when localStorage is updated from another tab/component)
+    const handleStorageChange = (e: StorageEvent) => {
+      if (e.key === 'userEnsAddress' && e.newValue) {
+        setEnsAddress(e.newValue);
+        console.log('🔄 ENS updated from storage event:', e.newValue);
+      }
+    };
+
+    // Custom event listener for same-tab updates
+    const handleCustomUpdate = (e: CustomEvent) => {
+      if (e.detail) {
+        setEnsAddress(e.detail);
+        console.log('🔄 ENS updated from custom event:', e.detail);
+      }
+    };
+
+    window.addEventListener('storage', handleStorageChange);
+    window.addEventListener('ensRegistered', handleCustomUpdate as EventListener);
+
+    // Periodic check as fallback
+    const interval = setInterval(() => {
+      const currentEns = localStorage.getItem("userEnsAddress");
+      if (currentEns && currentEns !== ensAddress) {
+        setEnsAddress(currentEns);
+        console.log('🔄 ENS updated from periodic check:', currentEns);
+      }
+    }, 1000);
+
+    return () => {
+      window.removeEventListener('storage', handleStorageChange);
+      window.removeEventListener('ensRegistered', handleCustomUpdate as EventListener);
+      clearInterval(interval);
+    };
+  }, [ensAddress]);
 
   const socialMediaApps = [
     "Instagram",
@@ -468,17 +536,33 @@ function LaunchChallengeTab({ address, refetchDeposit }: { address?: string; ref
       <div className="mb-8">
         <label className="block font-mono text-[10px] tracking-[0.2em] uppercase text-muted-foreground mb-4">
           ENS Address / Mobile App Username
+          {isLoadingEns && (
+            <span className="ml-2 text-accent animate-pulse">Fetching from blockchain...</span>
+          )}
+          {blockchainEnsName && !isLoadingEns && (
+            <span className="ml-2 text-green-500">✓ Found on blockchain</span>
+          )}
         </label>
         <input
           type="text"
           value={ensAddress}
           onChange={(e) => setEnsAddress(e.target.value)}
-          placeholder="yourname.eth or unique username"
+          placeholder={
+            isLoadingEns 
+              ? "Checking blockchain for your ENS..." 
+              : "yourname.eth or unique username"
+          }
           className="w-full bg-background border border-border/30 px-4 py-3 text-foreground font-mono text-sm focus:outline-none focus:border-accent transition-colors"
-          disabled={loading}
+          disabled={loading || isLoadingEns}
         />
         <p className="text-xs text-muted-foreground mt-2">
           This must match the <span className="font-mono text-accent">user_id</span> field configured in your mobile app.
+          {blockchainEnsName && (
+            <span className="block mt-1 text-green-500">
+              ✓ ENS fetched from blockchain: <span className="font-mono">{blockchainEnsName}</span>
+              {sepoliaEnsName && " (Sepolia Testnet)"}
+            </span>
+          )}
         </p>
       </div>
 
