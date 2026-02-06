@@ -33,7 +33,7 @@ const arcTestnet = defineChain({
 const config = getDefaultConfig({
   appName: 'No-Scroll Savings',
   projectId: '7a6e6a1f7934519391a590f1b17504df',
-  chains: [arcTestnet, sepolia, baseSepolia, optimismSepolia, arbitrumSepolia],
+  chains: [sepolia, arcTestnet, baseSepolia, optimismSepolia, arbitrumSepolia],
   ssr: true,
 });
 
