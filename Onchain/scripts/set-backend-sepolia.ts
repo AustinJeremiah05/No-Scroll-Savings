@@ -2,7 +2,7 @@ import { ethers } from "hardhat";
 
 async function main() {
   const [owner] = await ethers.getSigners();
-  const TREASURY_MANAGER = "0x8C5963806f445BC5A7011A4072ed958767E90DB9";
+  const TREASURY_MANAGER = "0xbE51ad59f4a68089fc86697c7d5EFe756268F0d9"; // Latest deployment
   const BACKEND_ADDRESS = "0xe01Add0c3640a8314132bAF491d101A38ffEF4f0";
 
   console.log("🔧 Setting backend address in TreasuryManager...");

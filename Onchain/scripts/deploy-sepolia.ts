@@ -12,11 +12,20 @@ async function main() {
   
   // Configuration
   const SEPOLIA_USDC = process.env.SEPOLIA_USDC_ADDRESS || "0x...";
+  const SEPOLIA_WETH = process.env.SEPOLIA_WETH_ADDRESS || "0x...";
   const SEPOLIA_AAVE_POOL = process.env.SEPOLIA_AAVE_POOL || "0x...";
   const SEPOLIA_UNISWAP_POOL_MANAGER = process.env.SEPOLIA_UNISWAP_POOL_MANAGER || "0x...";
   
   if (SEPOLIA_USDC === "0x...") {
     throw new Error("Please set SEPOLIA_USDC_ADDRESS in .env file");
+  }
+  
+  if (SEPOLIA_WETH === "0x...") {
+    throw new Error("Please set SEPOLIA_WETH_ADDRESS in .env file");
+  }
+  
+  if (SEPOLIA_UNISWAP_POOL_MANAGER === "0x...") {
+    throw new Error("Please set SEPOLIA_UNISWAP_POOL_MANAGER in .env file");
   }
   
   console.log("\n=== Deploying Uniswap V4 Infrastructure ===");
@@ -48,8 +57,9 @@ async function main() {
   const UniswapAgent = await ethers.getContractFactory("UniswapV4Agent");
   const uniswapAgent = await UniswapAgent.deploy(
     SEPOLIA_USDC,
-    SEPOLIA_UNISWAP_POOL_MANAGER !== "0x..." ? SEPOLIA_UNISWAP_POOL_MANAGER : ethers.ZeroAddress,
-    deployer.address
+    SEPOLIA_UNISWAP_POOL_MANAGER,
+    deployer.address,
+    SEPOLIA_WETH
   );
   await uniswapAgent.waitForDeployment();
   const uniswapAgentAddress = await uniswapAgent.getAddress();
@@ -106,8 +116,9 @@ async function main() {
   console.log("Network: Ethereum Sepolia (Chain ID: 11155111)");
   console.log("\nConfiguration:");
   console.log("  USDC Token:", SEPOLIA_USDC);
+  console.log("  WETH Token:", SEPOLIA_WETH);
   console.log("  Aave Pool:", SEPOLIA_AAVE_POOL !== "0x..." ? SEPOLIA_AAVE_POOL : "Not configured");
-  console.log("  Uniswap Pool Manager:", SEPOLIA_UNISWAP_POOL_MANAGER !== "0x..." ? SEPOLIA_UNISWAP_POOL_MANAGER : "Not configured");
+  console.log("  Uniswap Pool Manager:", SEPOLIA_UNISWAP_POOL_MANAGER);
   
   console.log("\nDeployed Contracts:");
   console.log("  NoScrollSavingsHook:", hookAddress);
@@ -121,7 +132,7 @@ async function main() {
   console.log("\n=== Verification Commands ===");
   console.log(`npx hardhat verify --network sepolia ${hookAddress} "${ethers.ZeroAddress}" "${deployer.address}"`);
   console.log(`npx hardhat verify --network sepolia ${strategyManagerAddress} "${ethers.ZeroAddress}" "${deployer.address}"`);
-  console.log(`npx hardhat verify --network sepolia ${uniswapAgentAddress} "${SEPOLIA_USDC}" "${SEPOLIA_UNISWAP_POOL_MANAGER !== "0x..." ? SEPOLIA_UNISWAP_POOL_MANAGER : ethers.ZeroAddress}" "${deployer.address}"`);
+  console.log(`npx hardhat verify --network sepolia ${uniswapAgentAddress} "${SEPOLIA_USDC}" "${SEPOLIA_UNISWAP_POOL_MANAGER}" "${deployer.address}" "${SEPOLIA_WETH}"`);
   console.log(`npx hardhat verify --network sepolia ${treasuryManagerAddress} "${SEPOLIA_USDC}" "${SEPOLIA_AAVE_POOL !== "0x..." ? SEPOLIA_AAVE_POOL : ethers.ZeroAddress}" "${deployer.address}"`);
   
   console.log("\n=== Next Steps ===");

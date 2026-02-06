@@ -12,8 +12,8 @@ import * as path from "path";
 
 // Contract addresses
 const SAVINGS_VAULT_ARC = "0xF4df10e373E509EC3d96237df91bE9B0006E918D";
-const TREASURY_MANAGER_SEPOLIA = "0x8C5963806f445BC5A7011A4072ed958767E90DB9";
-const UNISWAP_V4_AGENT_SEPOLIA = "0x64Ba37d28dc1dfAf2E07670501abE4c4C7dC397a"; // Update after deployment
+const TREASURY_MANAGER_SEPOLIA = "0xbE51ad59f4a68089fc86697c7d5EFe756268F0d9"; // Updated deployment
+const UNISWAP_V4_AGENT_SEPOLIA = "0xBABe158C1c2B674dD31bb404A2A2Ec1f144a57B6"; // Simplified working version (2026-02-06)
 const USDC_ARC = "0x75faf114eafb1BDbe2F0316DF893fd58CE46AA4d";
 const USDC_SEPOLIA = "0x1c7D4B196Cb0C7B01d743Fbc6116a902379C7238";
 
@@ -78,6 +78,21 @@ const sepoliaPublicClient = createPublicClient({
 
 // Initialize the SDK
 const kit = new BridgeKit();
+
+/**
+ * Check if Arc RPC is reachable
+ */
+const checkArcConnectivity = async (): Promise<boolean> => {
+  try {
+    const blockNumber = await arcPublicClient.getBlockNumber();
+    console.log(`✅ Arc RPC connected. Latest block: ${blockNumber}`);
+    return true;
+  } catch (error) {
+    console.error("❌ Arc RPC connectivity issue:", error instanceof Error ? error.message : String(error));
+    console.log("💡 Arc Testnet RPC may be experiencing issues. Bridge operations will retry automatically.");
+    return false;
+  }
+};
 
 // Track processed deposits
 const PROCESSED_FILE = path.join(__dirname, "processed-deposits.json");
@@ -254,8 +269,9 @@ const confirmBridge = async (bridgeRequestId: string, amount: bigint): Promise<v
 
 /**
  * Bridge USDC from Arc to Sepolia using CCTP
+ * Includes retry logic for network errors
  */
-const bridgeUSDC = async (amount: string): Promise<any> => {
+const bridgeUSDC = async (amount: string, retryCount = 0, maxRetries = 3): Promise<any> => {
   try {
     if (!process.env.PRIVATE_KEY) {
       throw new Error("PRIVATE_KEY is missing from environment variables");
@@ -265,7 +281,7 @@ const bridgeUSDC = async (amount: string): Promise<any> => {
       privateKey: process.env.PRIVATE_KEY,
     });
 
-    console.log(`🌉 Bridging ${amount} USDC: Arc → Sepolia via CCTP`);
+    console.log(`🌉 Bridging ${amount} USDC: Arc → Sepolia via CCTP ${retryCount > 0 ? `(Retry ${retryCount}/${maxRetries})` : ''}`);
 
     const result = await kit.bridge({
       from: {
@@ -280,6 +296,22 @@ const bridgeUSDC = async (amount: string): Promise<any> => {
     });
 
     console.log("Bridge result state:", result.state);
+    
+    // Log detailed error info if state is error
+    if (result.state === 'error') {
+      console.log("\n❌ Bridge operation failed. Detailed info:");
+      if (result.steps) {
+        result.steps.forEach((step: any, idx: number) => {
+          console.log(`  Step ${idx + 1}: ${step.name}`);
+          console.log(`    State: ${step.state}`);
+          if (step.error) {
+            console.log(`    Error: ${JSON.stringify(step.error)}`);
+          }
+        });
+      }
+      // Log the full result for debugging
+      console.log(`  Full result: ${JSON.stringify(result, null, 2)}`);
+    }
     
     // Check if bridge completed successfully
     if (result.state === 'success') {
@@ -345,12 +377,43 @@ const bridgeUSDC = async (amount: string): Promise<any> => {
         }
       }
       
+      // Check if it's a network/RPC error that's worth retrying
+      const errorStr = JSON.stringify(result);
+      const isNetworkError = errorStr.includes('fetch failed') || 
+                            errorStr.includes('network') || 
+                            errorStr.includes('timeout') ||
+                            errorStr.includes('ECONNREFUSED') ||
+                            errorStr.includes('503') ||
+                            errorStr.includes('502');
+      
+      if (isNetworkError && retryCount < maxRetries) {
+        const waitTime = Math.min(1000 * Math.pow(2, retryCount), 10000); // Exponential backoff, max 10s
+        console.log(`\n⏳ Network error detected. Retrying in ${waitTime / 1000} seconds...`);
+        await new Promise(resolve => setTimeout(resolve, waitTime));
+        return bridgeUSDC(amount, retryCount + 1, maxRetries);
+      }
+      
       throw new Error(`Bridge did not complete successfully. State: ${result.state}`);
     }
 
     return result;
   } catch (err) {
     console.error("❌ Bridge Error:", err instanceof Error ? err.message : String(err));
+    
+    // Retry on network errors
+    const errorStr = err instanceof Error ? err.message : String(err);
+    const isNetworkError = errorStr.includes('fetch failed') || 
+                          errorStr.includes('network') ||
+                          errorStr.includes('timeout') ||
+                          errorStr.includes('ECONNREFUSED');
+    
+    if (isNetworkError && retryCount < maxRetries) {
+      const waitTime = Math.min(1000 * Math.pow(2, retryCount), 10000);
+      console.log(`\n⏳ Network error in bridge operation. Retrying in ${waitTime / 1000} seconds...`);
+      await new Promise(resolve => setTimeout(resolve, waitTime));
+      return bridgeUSDC(amount, retryCount + 1, maxRetries);
+    }
+    
     throw err;
   }
 };
@@ -372,13 +435,13 @@ const deployToTreasury = async (amount: bigint): Promise<string> => {
       transport: http(),
     });
 
-    console.log("📊 Transferring USDC to TreasuryManager...");
+    console.log("📊 Deploying USDC to TreasuryManager...");
     console.log("   Amount:", formatUnits(amount, 6), "USDC");
     console.log("   From: Backend wallet");
-    console.log("   To: TreasuryManager");
+    console.log("   To: TreasuryManager → UniswapV4Agent → Uniswap Pool");
     
-    // Transfer USDC from backend to TreasuryManager
-    console.log("💸 Executing transfer...");
+    // Step 1: Transfer USDC to TreasuryManager
+    console.log("\n💰 Step 1: Transferring USDC to TreasuryManager...");
     const transferHash = await walletClient.writeContract({
       address: USDC_SEPOLIA as `0x${string}`,
       abi: usdcAbi,
@@ -386,13 +449,32 @@ const deployToTreasury = async (amount: bigint): Promise<string> => {
       args: [TREASURY_MANAGER_SEPOLIA as `0x${string}`, amount],
     });
     
-    const receipt = await sepoliaPublicClient.waitForTransactionReceipt({ hash: transferHash });
+    await sepoliaPublicClient.waitForTransactionReceipt({ hash: transferHash });
     console.log("✅ USDC transferred to TreasuryManager!");
+    console.log("   Transaction:", transferHash);
+    
+    // Step 2: Call TreasuryManager.receiveFunds() which will:
+    //   - Approve UniswapV4Agent to spend USDC
+    //   - Call UniswapV4Agent.depositLiquidity()
+    //   - Deploy liquidity to Uniswap V4 USDC/WETH pool
+    console.log("\n🚀 Step 2: Calling TreasuryManager.receiveFunds()...");
+    console.log("   This will deploy liquidity to Uniswap V4 automatically");
+    
+    const receiveFundsHash = await walletClient.writeContract({
+      address: TREASURY_MANAGER_SEPOLIA as `0x${string}`,
+      abi: treasuryManagerAbi,
+      functionName: "receiveFunds",
+      args: [amount],
+    });
+    
+    const receipt = await sepoliaPublicClient.waitForTransactionReceipt({ hash: receiveFundsHash });
+    console.log("✅ TreasuryManager deployed funds to Uniswap!");
     console.log("   Transaction:", receipt.transactionHash);
     console.log("   Block:", receipt.blockNumber);
     console.log("   Status:", receipt.status === "success" ? "✅ Success" : "❌ Failed");
+    console.log("   Explorer:", `https://sepolia.etherscan.io/tx/${receipt.transactionHash}`);
     
-    console.log("\n📝 Treasury now holds the USDC. Uniswap deployment pending.");
+    console.log("\n🎉 USDC is now deployed in Uniswap V4 USDC/WETH pool earning yield!");
 
     return receipt.transactionHash;
   } catch (err) {
@@ -720,6 +802,13 @@ const processDeposit = async (
       // Step 1: Withdraw USDC from vault to backend wallet
       console.log("🚀 Step 1: Withdrawing USDC from SavingsVault...");
       await withdrawFromVault(bridgeRequestId, amount || 0n);
+
+      // Pre-flight check: Verify Arc RPC connectivity
+      console.log("\n🔍 Checking Arc RPC connectivity...");
+      const isArcConnected = await checkArcConnectivity();
+      if (!isArcConnected) {
+        console.log("⚠️  Arc RPC is having issues. Attempting bridge anyway with retries...");
+      }
 
       // Step 2: Bridge USDC via CCTP (includes waiting for attestation)
       console.log("\n🚀 Step 2: Bridging via CCTP...");
@@ -1230,6 +1319,23 @@ const main = async (): Promise<void> => {
     console.log("📥 Deposits: Arc → Sepolia (via CCTP)");
     console.log("📤 Withdrawals: Sepolia → Arc (via CCTP)");
     console.log("============================================\n");
+
+    // Check connectivity on startup
+    console.log("🔍 Checking network connectivity...");
+    const isArcConnected = await checkArcConnectivity();
+    
+    try {
+      const sepoliaBlock = await sepoliaPublicClient.getBlockNumber();
+      console.log(`✅ Sepolia RPC connected. Latest block: ${sepoliaBlock}\n`);
+    } catch (error) {
+      console.error("❌ Sepolia RPC connectivity issue:", error instanceof Error ? error.message : String(error));
+      console.log("⚠️  Service may not function properly without Sepolia connectivity.\n");
+    }
+    
+    if (!isArcConnected) {
+      console.log("⚠️  WARNING: Arc RPC is not responding. Bridge operations will fail until it's back online.");
+      console.log("💡 The service will continue running and retry automatically.\n");
+    }
 
     // Start both watchers in parallel
     await Promise.all([

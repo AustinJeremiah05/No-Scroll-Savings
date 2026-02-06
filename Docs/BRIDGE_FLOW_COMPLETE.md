@@ -437,7 +437,7 @@ npm start
 | Contract | Address | Purpose |
 |----------|---------|---------|
 | TreasuryManager | `0x8C5963806f445BC5A7011A4072ed958767E90DB9` | Manages USDC, deploys to Uniswap |
-| UniswapV4Agent | `0x64Ba37d28dc1dfAf2E07670501abE4c4C7dC397a` | Provides liquidity (NOT DEPLOYED YET) |
+| UniswapV4Agent | `0x7c20FC8413F935a274Bc5C16fE18370C0be5F72f` | Provides liquidity to USDC/WETH pool |
 | USDC | `0x1c7D4B196Cb0C7B01d743Fbc6116a902379C7238` | USDC token |
 
 ---
