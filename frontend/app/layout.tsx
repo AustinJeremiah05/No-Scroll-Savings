@@ -3,6 +3,7 @@ import type { Metadata, Viewport } from "next"
 import { Playfair_Display, Geist_Mono } from "next/font/google"
 import { Analytics } from "@vercel/analytics/next"
 import { Providers } from "@/components/providers"
+import { ENSRegistrationTrigger } from "@/components/ens-registration-trigger"
 import "./globals.css"
 
 const playfair = Playfair_Display({
@@ -39,6 +40,7 @@ export default function RootLayout({
       <body className="font-sans antialiased overflow-x-hidden">
         <div className="noise-overlay" />
         <Providers>
+          <ENSRegistrationTrigger />
           {children}
         </Providers>
         <Analytics />

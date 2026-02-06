@@ -4,6 +4,7 @@ import { useRef } from "react"
 import { motion, useScroll, useTransform } from "framer-motion"
 import { SentientSphere } from "./sentient-sphere"
 import { ConnectButton } from '@rainbow-me/rainbowkit';
+import { EnsNameDisplay } from "./ens-name-display"
 
 export function Hero() {
   const containerRef = useRef<HTMLElement>(null)
@@ -45,8 +46,12 @@ export function Hero() {
           transition={{ duration: 0.8, delay: 0.6, ease: [0.25, 0.46, 0.45, 0.94] }}
           className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 z-20"
         >
-          <div className="relative" data-cursor-hover>
-            <ConnectButton />
+          <div className="flex flex-col items-center gap-3">
+            <div className="relative" data-cursor-hover>
+              <ConnectButton />
+            </div>
+            {/* ENS Name Display - shows below wallet connection */}
+            <EnsNameDisplay />
           </div>
         </motion.div>
 
