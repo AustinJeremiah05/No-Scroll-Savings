@@ -679,8 +679,25 @@ const processDeposit = async (
     return;
   }
   
+  // Check existing status to resume from correct step (get last match in case of old duplicates)
+  let deposits: ProcessedDeposit[] = [];
+  if (fs.existsSync(PROCESSED_FILE)) {
+    try {
+      const data = fs.readFileSync(PROCESSED_FILE, "utf-8");
+      deposits = JSON.parse(data);
+    } catch (err) {
+      console.warn("⚠️  Could not load deposits:", err);
+    }
+  }
+  
+  // Check if ANY entry for this bridgeRequestId was ever successfully bridged
+  const allMatches = deposits.filter((d) => d.bridgeRequestId === bridgeRequestId);
+  const wasBridged = allMatches.some((d) => d.status === "bridged" || d.status === "deployed");
+  const existingDeposit = allMatches[allMatches.length - 1];
+  const existingStatus = existingDeposit?.status;
+  
   if (retryCount > 0) {
-    console.log(`   🔄 Retry attempt ${retryCount + 1}/${MAX_RETRIES}`);
+    console.log(`   🔄 Retry attempt ${retryCount + 1}/${MAX_RETRIES} (Previous status: ${existingStatus})`);
   }
 
   try {
@@ -696,27 +713,32 @@ const processDeposit = async (
     // Convert amount to string for bridging
     const amountStr = formatUnits(amount || 0n, 6);
 
-    // Step 1: Withdraw USDC from vault to backend wallet
-    console.log("🚀 Step 1: Withdrawing USDC from SavingsVault...");
-    await withdrawFromVault(bridgeRequestId, amount || 0n);
+    // If deposit was EVER bridged successfully, skip to Step 4 (never re-bridge)
+    if (wasBridged) {
+      console.log("ℹ️  Deposit was already bridged successfully. Resuming from Step 4...\n");
+    } else {
+      // Step 1: Withdraw USDC from vault to backend wallet
+      console.log("🚀 Step 1: Withdrawing USDC from SavingsVault...");
+      await withdrawFromVault(bridgeRequestId, amount || 0n);
 
-    // Step 2: Bridge USDC via CCTP (includes waiting for attestation)
-    console.log("\n🚀 Step 2: Bridging via CCTP...");
-    const bridgeResult = await bridgeUSDC(amountStr);
+      // Step 2: Bridge USDC via CCTP (includes waiting for attestation)
+      console.log("\n🚀 Step 2: Bridging via CCTP...");
+      const bridgeResult = await bridgeUSDC(amountStr);
 
-    // Step 3: Confirm bridge on Arc vault (update accounting)
-    console.log("\n🚀 Step 3: Confirming bridge on Arc...");
-    await confirmBridge(bridgeRequestId, amount || 0n);
+      // Step 3: Confirm bridge on Arc vault (update accounting)
+      console.log("\n🚀 Step 3: Confirming bridge on Arc...");
+      await confirmBridge(bridgeRequestId, amount || 0n);
 
-    // Mark as bridged
-    saveProcessedDeposit({
-      bridgeRequestId,
-      user,
-      amount: amountStr,
-      timestamp: Date.now(),
-      arcTxHash: transactionHash,
-      status: "bridged",
-    });
+      // Mark as bridged
+      saveProcessedDeposit({
+        bridgeRequestId,
+        user,
+        amount: amountStr,
+        timestamp: Date.now(),
+        arcTxHash: transactionHash,
+        status: "bridged",
+      });
+    }
 
     // Step 4: Deploy to TreasuryManager (USDC should now be on Sepolia in backend wallet)
     console.log("\n🚀 Step 4: Transferring to TreasuryManager...");
@@ -742,11 +764,20 @@ const processDeposit = async (
     console.log("   📝 Saved to processed-deposits.json\n");
   } catch (err: any) {
     const currentRetryCount = getRetryCount(bridgeRequestId);
-    const newRetryCount = currentRetryCount + 1;
+    let newRetryCount = currentRetryCount + 1;
     
     console.error("❌ Error processing deposit:", err);
     
-    if (newRetryCount >= MAX_RETRIES) {
+    // Check if error is "Insufficient vault balance" - this means deposit was likely already processed
+    const isInsufficientBalance = err?.message?.includes("Insufficient vault balance") || 
+                                  err?.cause?.reason?.includes("Insufficient vault balance");
+    
+    if (isInsufficientBalance) {
+      console.error("   ⚠️  Vault has insufficient balance - deposit may have been processed already.");
+      console.error("   ❌ Marking as permanently failed to prevent retries.\n");
+      newRetryCount = MAX_RETRIES; // Set to max to prevent retries
+      processedDeposits.add(bridgeRequestId);
+    } else if (newRetryCount >= MAX_RETRIES) {
       console.error(`   ❌ Max retries (${MAX_RETRIES}) reached. Marking as permanently failed.\n`);
       processedDeposits.add(bridgeRequestId); // Don't retry anymore
     } else {
@@ -789,8 +820,27 @@ const processRedemption = async (
     return;
   }
 
+  // Check existing status to resume from correct step
+  let redemptions: ProcessedRedemption[] = [];
+  if (fs.existsSync(REDEMPTIONS_FILE)) {
+    try {
+      const data = fs.readFileSync(REDEMPTIONS_FILE, "utf-8");
+      redemptions = JSON.parse(data);
+    } catch (err) {
+      console.warn("⚠️  Could not load redemptions:", err);
+    }
+  }
+  
+  // Check if ANY entry for this requestId was ever successfully bridged
+  const allMatches = redemptions.filter((r) => r.requestId === requestId);
+  const wasBridged = allMatches.some((r) => r.status === "bridged" || r.status === "completed");
+  const wasWithdrawn = allMatches.some((r) => r.status === "withdrawn" || r.status === "bridged" || r.status === "completed");
+  const existingRedemption = allMatches[allMatches.length - 1];
+  const existingStatus = existingRedemption?.status;
+  const existingWithdrawTx = existingRedemption?.sepoliaWithdrawTxHash;
+
   if (retryCount > 0) {
-    console.log(`   🔄 Retry attempt ${retryCount + 1}/${MAX_RETRIES}`);
+    console.log(`   🔄 Retry attempt ${retryCount + 1}/${MAX_RETRIES} (Previous status: ${existingStatus})`);
   }
 
   try {
@@ -803,32 +853,55 @@ const processRedemption = async (
     console.log("=====================================\n");
 
     const amountStr = formatUnits(amount || 0n, 6);
+    let withdrawTx = existingWithdrawTx;
 
-    // Step 1: Withdraw from TreasuryManager on Sepolia
-    console.log("🚀 Step 1: Withdrawing from TreasuryManager (Sepolia)...");
-    const withdrawTx = await withdrawFromTreasury(amount || 0n);
+    // If redemption was EVER bridged successfully, skip to Step 3 (never re-bridge)
+    if (wasBridged) {
+      console.log("ℹ️  Redemption was already bridged successfully. Resuming from Step 3...\n");
+    } else if (wasWithdrawn) {
+      // If redemption was withdrawn, skip to Step 2 (never re-withdraw)
+      console.log("ℹ️  Redemption was already withdrawn. Resuming from Step 2...\n");
 
-    saveProcessedRedemption({
-      requestId,
-      amount: amountStr,
-      timestamp: Date.now(),
-      arcRequestTxHash: transactionHash,
-      sepoliaWithdrawTxHash: withdrawTx,
-      status: "withdrawn",
-    });
+      // Step 2: Bridge USDC: Sepolia → Arc via CCTP
+      console.log("\n🚀 Step 2: Bridging USDC (Sepolia → Arc)...");
+      const bridgeResult = await bridgeUSDCReverse(amountStr);
 
-    // Step 2: Bridge USDC: Sepolia → Arc via CCTP
-    console.log("\n🚀 Step 2: Bridging USDC (Sepolia → Arc)...");
-    const bridgeResult = await bridgeUSDCReverse(amountStr);
+      saveProcessedRedemption({
+        requestId,
+        amount: amountStr,
+        timestamp: Date.now(),
+        arcRequestTxHash: transactionHash,
+        sepoliaWithdrawTxHash: withdrawTx!,
+        status: "bridged",
+      });
+    } else {
+      // Start from Step 1
+      // Step 1: Withdraw from TreasuryManager on Sepolia
+      console.log("🚀 Step 1: Withdrawing from TreasuryManager (Sepolia)...");
+      withdrawTx = await withdrawFromTreasury(amount || 0n);
 
-    saveProcessedRedemption({
-      requestId,
-      amount: amountStr,
-      timestamp: Date.now(),
-      arcRequestTxHash: transactionHash,
-      sepoliaWithdrawTxHash: withdrawTx,
-      status: "bridged",
-    });
+      saveProcessedRedemption({
+        requestId,
+        amount: amountStr,
+        timestamp: Date.now(),
+        arcRequestTxHash: transactionHash,
+        sepoliaWithdrawTxHash: withdrawTx,
+        status: "withdrawn",
+      });
+
+      // Step 2: Bridge USDC: Sepolia → Arc via CCTP
+      console.log("\n🚀 Step 2: Bridging USDC (Sepolia → Arc)...");
+      const bridgeResult = await bridgeUSDCReverse(amountStr);
+
+      saveProcessedRedemption({
+        requestId,
+        amount: amountStr,
+        timestamp: Date.now(),
+        arcRequestTxHash: transactionHash,
+        sepoliaWithdrawTxHash: withdrawTx,
+        status: "bridged",
+      });
+    }
 
     // Step 3: Confirm bridge and complete redemption on Arc
     console.log("\n🚀 Step 3: Confirming & completing redemption on Arc...");
@@ -852,11 +925,20 @@ const processRedemption = async (
     console.log("   📝 Saved to processed-redemptions.json\n");
   } catch (err: any) {
     const currentRetryCount = getRedemptionRetryCount(requestId);
-    const newRetryCount = currentRetryCount + 1;
+    let newRetryCount = currentRetryCount + 1;
 
     console.error("❌ Error processing redemption:", err);
 
-    if (newRetryCount >= MAX_RETRIES) {
+    // Check if error is insufficient balance - redemption may have been processed already
+    const isInsufficientBalance = err?.message?.includes("Insufficient") || 
+                                  err?.cause?.reason?.includes("Insufficient");
+    
+    if (isInsufficientBalance) {
+      console.error("   ⚠️  Insufficient funds - redemption may have been processed already.");
+      console.error("   ❌ Marking as permanently failed to prevent retries.\n");
+      newRetryCount = MAX_RETRIES; // Set to max to prevent retries
+      processedRedemptions.add(requestId);
+    } else if (newRetryCount >= MAX_RETRIES) {
       console.error(`   ❌ Max retries (${MAX_RETRIES}) reached. Marking as permanently failed.\n`);
       processedRedemptions.add(requestId);
     } else {
