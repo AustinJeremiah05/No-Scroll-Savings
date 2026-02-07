@@ -7,6 +7,7 @@ import { useRouter } from "next/navigation";
 import { createClient } from "@supabase/supabase-js";
 import { SentientSphere } from "@/components/sentient-sphere";
 import { CONTRACTS } from "@/lib/contracts";
+import { useSubnameRegistry } from "@/hooks/use-subname-registry";
 import {
   useDepositUSDC,
   useRecordCompliance,
@@ -230,10 +231,12 @@ function LaunchChallengeTab({ address, refetchDeposit }: { address?: string; ref
   const [durationUnit, setDurationUnit] = useState("minutes");
   const [depositAmount, setDepositAmount] = useState("");
   const [ensAddress, setEnsAddress] = useState("");
+  const [subnameLabel, setSubnameLabel] = useState("");
   const [loading, setLoading] = useState(false);
   const [status, setStatus] = useState("");
 
   const { deposit } = useDepositUSDC();
+  const { createSubname, isCreating, error: subnameError } = useSubnameRegistry();
 
   // Fetch ENS name from blockchain using wallet address
   const { data: mainnetEnsName, isLoading: mainnetLoading } = useEnsName({
@@ -369,12 +372,36 @@ function LaunchChallengeTab({ address, refetchDeposit }: { address?: string; ref
     setStatus("🚀 Creating challenge and depositing USDC...");
     
     try {
-      // Save ENS address to localStorage for Monitor tab
+      // Step 1: Create subname if provided (on Arc Testnet)
+      let subnameHash: string | null = null;
+      if (subnameLabel && subnameLabel.trim() !== "" && ensAddress.includes('.eth')) {
+        setStatus(`🔗 Creating subname: ${subnameLabel}.${ensAddress} on Arc Testnet...`);
+        try {
+          const hash = await createSubname(
+            subnameLabel.trim(),
+            ensAddress,
+            0, // challengeId will be linked later
+            365 // 1 year duration in days
+          );
+          subnameHash = hash;
+          setStatus(`✅ Subname created: ${subnameLabel}.${ensAddress}\n🚀 Now depositing USDC...`);
+        } catch (subnameErr: any) {
+          console.error('Subname creation error:', subnameErr);
+          setStatus(`⚠️ Could not create subname: ${subnameErr.message}\n🚀 Continuing with deposit...`);
+        }
+      }
+
+      // Step 2: Save ENS address to localStorage for Monitor tab
       localStorage.setItem("userEnsAddress", ensAddress.trim());
       
-      // Call deposit which will create challenge + deposit in vault
+      // Step 3: Call deposit which will create challenge + deposit in vault
       const tx = await deposit(depositAmount, address, durationInSeconds, `No ${challengeType}`);
-      setStatus(`SUCCESS\n\nChallenge created and funds deposited.\nTransaction: ${tx?.slice(0, 10)}...\n\nYour ENS/Username: ${ensAddress}\nMake sure your mobile app uses this same identifier.\n\nSwitch to Monitor tab to verify tracking.`);
+      
+      const successMessage = subnameHash 
+        ? `SUCCESS\n\n✅ Subname created: ${subnameLabel}.${ensAddress}\n✅ Challenge created and funds deposited.\nTransaction: ${tx?.slice(0, 10)}...\n\nYour ENS/Username: ${ensAddress}\nMake sure your mobile app uses this same identifier.\n\nSwitch to Monitor tab to verify tracking.`
+        : `SUCCESS\n\nChallenge created and funds deposited.\nTransaction: ${tx?.slice(0, 10)}...\n\nYour ENS/Username: ${ensAddress}\nMake sure your mobile app uses this same identifier.\n\nSwitch to Monitor tab to verify tracking.`;
+      
+      setStatus(successMessage);
       
       // Refetch deposit data to update UI
       if (refetchDeposit) {
@@ -383,6 +410,7 @@ function LaunchChallengeTab({ address, refetchDeposit }: { address?: string; ref
       
       // Reset form (but keep ENS)
       setDepositAmount("");
+      setSubnameLabel("");
       setDurationValue("5");
       setDurationUnit("minutes");
     } catch (error: any) {
@@ -596,6 +624,36 @@ function LaunchChallengeTab({ address, refetchDeposit }: { address?: string; ref
           </button>
         </div>
       </div>
+
+      {/* Subname for Challenge (Optional) - Shows after deposit is entered */}
+      {depositAmount && ensAddress && ensAddress.includes('.eth') && (
+        <div className="mb-8">
+          <label className="block font-mono text-[10px] tracking-[0.2em] uppercase text-muted-foreground mb-4">
+            Subname for Challenge (Optional)
+          </label>
+          <div className="flex gap-3 items-center">
+            <input
+              type="text"
+              value={subnameLabel}
+              onChange={(e) => {
+                const value = e.target.value.toLowerCase().replace(/[^a-z0-9-]/g, '');
+                setSubnameLabel(value);
+              }}
+              placeholder="daily, weekly, challenge1"
+              className="flex-1 bg-background border border-border/30 px-4 py-3 text-foreground font-mono text-sm focus:outline-none focus:border-accent transition-colors"
+              disabled={loading}
+            />
+            <span className="text-muted-foreground font-mono text-sm">.{ensAddress}</span>
+          </div>
+          <p className="text-xs text-muted-foreground mt-2">
+            {subnameLabel ? (
+              <span className="text-accent">Will create: <span className="font-mono">{subnameLabel}.{ensAddress}</span> on Arc Testnet</span>
+            ) : (
+              "Create a unique subname for this challenge (e.g., daily, weekly)"
+            )}
+          </p>
+        </div>
+      )}
 
       {/* Summary */}
       <div className="border border-border/20 p-6 mb-8">

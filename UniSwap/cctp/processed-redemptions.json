@@ -34,5 +34,14 @@
     "status": "failed",
     "retryCount": 1,
     "lastError": "The contract function \"withdrawFunds\" reverted with the following reason:\nZero amount\n\nContract Call:\n  address:   0xbE51ad59f4a68089fc86697c7d5EFe756268F0d9\n  function:  withdrawFunds(uint256 amount)\n  args:                   (0)\n  sender:    0xe01Add0c3640a8314132bAF491d101A38ffEF4f0\n\nDocs: https://viem.sh/docs/contract/writeContract\nVersion: viem@2.45.1"
+  },
+  {
+    "requestId": "0x066d4f1d8eefc300553a14178d60ab281ab785a7883a1aa2497d57cb3df4002f",
+    "amount": "0",
+    "timestamp": 1770488671149,
+    "arcRequestTxHash": "0x7eb9735831e188861391910c134f6ae81c0eab4aac87f9a475ef16a57eadb489",
+    "status": "failed",
+    "retryCount": 1,
+    "lastError": "PRIVATE_KEY is missing"
   }
 ]
