@@ -1,13 +1,14 @@
-# Contract Addresses - Latest Deployment (Feb 6, 2026)
+# Contract Addresses - Latest Deployment (Feb 7, 2026)
 
 ## ✅ Sepolia Testnet Contracts
 
-### Newly Deployed (Feb 6, 2026)
+### Newly Deployed (Feb 7, 2026)
 ```
+EmptyHook:              0x0B2D2EC90342B62a9D80967d26A0b10b685d10d0 (V4 hook - required)
+UniswapV4Agent:         0x5AC3d6D73bBfc9C8b26a78cF7D7314B326B2CAb5 (0.3% fee + hook integrated)
+TreasuryManager:        0xbE51ad59f4a68089fc86697c7d5EFe756268F0d9
 NoScrollSavingsHook:    0x932e5f3e72D7cC0FBcF0E82283e310EEb2cba727
 YieldStrategyManager:   0xa6b00bAE312cBa98Aea60057EcbF2506114e4764
-UniswapV4Agent:         0x4A8DeCD2B05b29F27feD0E2E9680d8Ed299Dc927 (0.3% fee tier: 3000/60)
-TreasuryManager:        0xbE51ad59f4a68089fc86697c7d5EFe756268F0d9
 ```
 
 ### External Contracts (Already Deployed - Not Ours)
@@ -148,8 +149,11 @@ npx hardhat verify --network sepolia 0x932e5f3e72D7cC0FBcF0E82283e310EEb2cba727 
 # Verify YieldStrategyManager
 npx hardhat verify --network sepolia 0xa6b00bAE312cBa98Aea60057EcbF2506114e4764 "0x0000000000000000000000000000000000000000" "0xe01Add0c3640a8314132bAF491d101A38ffEF4f0"
 
+# Verify EmptyHook
+npx hardhat verify --network sepolia 0x0B2D2EC90342B62a9D80967d26A0b10b685d10d0 "0xE03A1074c86CFeDd5C142C4F04F1a1536e203543"
+
 # Verify UniswapV4Agent
-npx hardhat verify --network sepolia 0x7c20FC8413F935a274Bc5C16fE18370C0be5F72f "0x1c7D4B196Cb0C7B01d743Fbc6116a902379C7238" "0xE03A1074c86CFeDd5C142C4F04F1a1536e203543" "0xe01Add0c3640a8314132bAF491d101A38ffEF4f0" "0xfFf9976782d46CC05630D1f6eBAb18b2324d6B14"
+npx hardhat verify --network sepolia 0x5AC3d6D73bBfc9C8b26a78cF7D7314B326B2CAb5 "0x1c7D4B196Cb0C7B01d743Fbc6116a902379C7238" "0xE03A1074c86CFeDd5C142C4F04F1a1536e203543" "0xe01Add0c3640a8314132bAF491d101A38ffEF4f0" "0xfFf9976782d46CC05630D1f6eBAb18b2324d6B14"
 
 # Verify TreasuryManager
 npx hardhat verify --network sepolia 0xbE51ad59f4a68089fc86697c7d5EFe756268F0d9 "0x1c7D4B196Cb0C7B01d743Fbc6116a902379C7238" "0x87870Bca3F3fD6335C3F4ce8392D69350B4fA4E2" "0xe01Add0c3640a8314132bAF491d101A38ffEF4f0"
@@ -185,7 +189,8 @@ npm start
 **Check deployment:**
 - Visit Etherscan Sepolia
 - Check TreasuryManager: `https://sepolia.etherscan.io/address/0xbE51ad59f4a68089fc86697c7d5EFe756268F0d9`
-- Check UniswapV4Agent: `https://sepolia.etherscan.io/address/0x7c20FC8413F935a274Bc5C16fE18370C0be5F72f`
+- Check UniswapV4Agent: `https://sepolia.etherscan.io/address/0x5AC3d6D73bBfc9C8b26a78cF7D7314B326B2CAb5`
+- Check EmptyHook: `https://sepolia.etherscan.io/address/0x0B2D2EC90342B62a9D80967d26A0b10b685d10d0`
 - Look for transactions showing USDC transfers and `unlock()` calls
 
 ### 4. Update Backend Environment Variables
@@ -194,7 +199,8 @@ If you have a separate backend service, update its `.env`:
 
 ```env
 TREASURY_MANAGER_SEPOLIA=0xbE51ad59f4a68089fc86697c7d5EFe756268F0d9
-UNISWAP_V4_AGENT_SEPOLIA=0x4A8DeCD2B05b29F27feD0E2E9680d8Ed299Dc927
+UNISWAP_V4_AGENT_SEPOLIA=0x5AC3d6D73bBfc9C8b26a78cF7D7314B326B2CAb5
+EMPTY_HOOK_SEPOLIA=0x0B2D2EC90342B62a9D80967d26A0b10b685d10d0
 SAVINGS_VAULT_ARC=0xF4df10e373E509EC3d96237df91bE9B0006E918D
 ```
 
@@ -217,7 +223,8 @@ Before going live with real funds:
 
 ### Your Deployed Contracts
 - [TreasuryManager](https://sepolia.etherscan.io/address/0xbE51ad59f4a68089fc86697c7d5EFe756268F0d9)
-- [UniswapV4Agent](https://sepolia.etherscan.io/address/0x4A8DeCD2B05b29F27feD0E2E9680d8Ed299Dc927)
+- [UniswapV4Agent](https://sepolia.etherscan.io/address/0x5AC3d6D73bBfc9C8b26a78cF7D7314B326B2CAb5)
+- [EmptyHook](https://sepolia.etherscan.io/address/0x0B2D2EC90342B62a9D80967d26A0b10b685d10d0)
 - [NoScrollSavingsHook](https://sepolia.etherscan.io/address/0x932e5f3e72D7cC0FBcF0E82283e310EEb2cba727)
 - [YieldStrategyManager](https://sepolia.etherscan.io/address/0xa6b00bAE312cBa98Aea60057EcbF2506114e4764)
 

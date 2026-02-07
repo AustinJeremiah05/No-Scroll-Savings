@@ -91,21 +91,22 @@ function unlockCallback(bytes calldata data) external returns (bytes memory)
 - USDC: `0x1c7D4B196Cb0C7B01d743Fbc6116a902379C7238`
 - WETH: `0xfFf9976782d46CC05630D1f6eBAb18b2324d6B14`
 
-**Our Deployed Contracts (Latest: Feb 6, 2026):**
+**Our Deployed Contracts (Latest: Feb 7, 2026):**
 - TreasuryManager (Sepolia): `0xbE51ad59f4a68089fc86697c7d5EFe756268F0d9`
-- UniswapV4Agent (Sepolia): `0x7c20FC8413F935a274Bc5C16fE18370C0be5F72f` (USDC-only liquidity)
+- UniswapV4Agent (Sepolia): `0x5AC3d6D73bBfc9C8b26a78cF7D7314B326B2CAb5` (0.3% fee + EmptyHook)
+- EmptyHook (Sepolia): `0x0B2D2EC90342B62a9D80967d26A0b10b685d10d0` (Required V4 hook)
 - NoScrollSavingsHook (Sepolia): `0x932e5f3e72D7cC0FBcF0E82283e310EEb2cba727`
 - YieldStrategyManager (Sepolia): `0xa6b00bAE312cBa98Aea60057EcbF2506114e4764`
 - SavingsVault (Arc): `0xF4df10e373E509EC3d96237df91bE9B0006E918D`
 
 ### Pool Configuration
 - Pool: USDC/WETH (Initialized at 1:1 price)
-- Pool ID: `0xc4de78602bd0edeae2d01f228ea75fac004ae40eca07524882b0e1c74f564894`
-- Fee Tier: 1% (10000 bips) - Optimal for 3-minute yield generation
-- Tick Spacing: 200
-- Position Range: USDC-only liquidity (-887200 to -200)
-- Initialization TX: `0xe077cbeb39cef0e27c94b58bdea8722818eb01a81a89a401853a25918e31e0e0`
-- Hooks: None (address(0))
+- Pool ID: `0x2293facea404ca68d90c17616cbb286bc3d96408229137d78bb8e8b3ca6129cf`
+- Fee Tier: 0.3% (3000 bips) - Standard fee tier
+- Tick Spacing: 60 (aligned to 0.3% fee)
+- Position Range: USDC-only liquidity (-887220 to -60)
+- Initialization TX: `0xa96dd78641ef96aec8dec8940d5f299253249ae5f6ed6e009ca51370220eb370`
+- Hooks: EmptyHook at `0x0B2D2EC90342B62a9D80967d26A0b10b685d10d0` (V4 requirement)
 
 ## How to Deploy
 

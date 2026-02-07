@@ -8,6 +8,7 @@ import { ethers } from "hardhat";
 const POOL_MANAGER = "0xE03A1074c86CFeDd5C142C4F04F1a1536e203543";
 const USDC = "0x1c7D4B196Cb0C7B01d743Fbc6116a902379C7238";
 const WETH = "0xfFf9976782d46CC05630D1f6eBAb18b2324d6B14";
+const EMPTY_HOOK = "0x0B2D2EC90342B62a9D80967d26A0b10b685d10d0"; // Deployed EmptyHook (corrected signatures)
 
 async function main() {
   console.log("\n🏊 Initializing USDC/WETH Pool on Uniswap V4");
@@ -22,7 +23,7 @@ async function main() {
     currency1: WETH,      // Higher address
     fee: 3000,            // 0.3% = 3000 bips (STANDARD FEE TIER)
     tickSpacing: 60,      // MUST be 60 for 0.3% fee
-    hooks: ethers.ZeroAddress
+    hooks: EMPTY_HOOK     // EmptyHook (required by V4)
   };
 
   console.log("Pool Configuration (STANDARD 0.3% fee tier):");

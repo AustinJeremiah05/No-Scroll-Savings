@@ -24,6 +24,14 @@ struct BalanceDelta {
     int128 amount1;
 }
 
+struct SwapParams {
+    bool zeroForOne;
+    int256 amountSpecified;
+    uint160 sqrtPriceLimitX96;
+}
+
+type BeforeSwapDelta is int256;
+
 library CurrencyLibrary {
     function transfer(Currency currency, address to, uint256 amount) internal {
         if (Currency.unwrap(currency) == address(0)) {

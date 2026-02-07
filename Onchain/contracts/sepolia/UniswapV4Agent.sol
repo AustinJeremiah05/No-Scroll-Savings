@@ -92,7 +92,7 @@ contract UniswapV4Agent is Ownable, ReentrancyGuard, IUnlockCallback {
         USDC = IERC20(_usdc);
         poolManager = IPoolManager(_poolManager);
         
-        // Initialize USDC/WETH pool key (1% fee for maximum yield)
+        // Initialize USDC/WETH pool key (0.3% fee for standard liquidity)
         // Ensure currency0 < currency1 (address sort order)
         (Currency currency0, Currency currency1) = _usdc < _weth 
             ? (Currency.wrap(_usdc), Currency.wrap(_weth))
@@ -103,7 +103,7 @@ contract UniswapV4Agent is Ownable, ReentrancyGuard, IUnlockCallback {
             currency1: currency1,
             fee: 3000, // 0.3% fee = 3000 bips (standard fee tier)
             tickSpacing: 60, // 0.3% fee tier uses 60 tick spacing
-            hooks: address(0) // No hooks
+            hooks: 0x0B2D2EC90342B62a9D80967d26A0b10b685d10d0 // EmptyHook (required by V4)
         });
         
         // Initialize default strategy
