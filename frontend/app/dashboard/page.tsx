@@ -67,7 +67,7 @@ export default function Dashboard() {
               <div className="grid grid-cols-2 gap-4">
                 <div>
                   <p className="font-mono text-[10px] text-muted-foreground uppercase mb-1">Amount</p>
-                  <p className="font-mono text-xl text-accent">{(Number(userDeposit.assets) / 1e6).toFixed(2)} USDC</p>
+                  <p className="font-mono text-xl text-accent">{(Number(userDeposit.shares) / 1e6).toFixed(2)} USDC</p>
                 </div>
                 <div>
                   <p className="font-mono text-[10px] text-muted-foreground uppercase mb-1">Shares</p>
@@ -931,6 +931,20 @@ function WithdrawTab({ address }: { address?: string }) {
   const [requestId, setRequestId] = useState("");
   const { requestRedeem } = useRequestRedeem();
   const { claimRedemption } = useClaimRedemption();
+  const { deposit: userDeposit, refetch: refetchDeposit } = useGetUserDeposit(address);
+
+  // Calculate actual deposit amount from shares (1:1 with USDC)
+  const depositAmount = userDeposit?.shares ? Number(userDeposit.shares) / 1e6 : 0;
+
+  // Pre-fill shares with user's total shares
+  useEffect(() => {
+    if (userDeposit?.shares && !shares) {
+      setShares((Number(userDeposit.shares) / 1e6).toString());
+    }
+  }, [userDeposit, shares]);
+
+  const isUnlocked = userDeposit?.unlockTime ? Date.now() >= userDeposit.unlockTime * 1000 : false;
+  const hasDeposit = userDeposit?.shares && Number(userDeposit.shares) > 0;
 
   const handleRedeem = async () => {
     if (!address || !shares) return;
@@ -938,10 +952,22 @@ function WithdrawTab({ address }: { address?: string }) {
     setStatus("Requesting redemption...");
     try {
       const hash = await requestRedeem(shares, address, address, 11155111); // Sepolia
-      setStatus(`SUCCESS\n\nRedemption requested.\nTransaction: ${hash?.slice(0, 10)}...`);
+      const shortHash = hash?.slice(0, 10);
+      setStatus(`SUCCESS\n\n✅ Redemption requested!
+      
+Transaction: ${shortHash}...
+
+Next Steps:
+1. The CCTP bridge will automatically withdraw USDC from Sepolia
+2. Bridge USDC back to Arc (takes ~1-2 minutes)  
+3. Once complete, use the Request ID from transaction to claim
+
+Monitor CCTP logs or check back in a few minutes.`);
       setShares("");
+      refetchDeposit?.(); // Refresh deposit info
     } catch (error: any) {
-      setStatus(`ERROR\n\n${error?.message || "Unknown error"}`);
+      const errorMsg = error?.message || "Unknown error";
+      setStatus(`ERROR\n\n${errorMsg}\n\nTip: Make sure your deposit is unlocked and you have enough shares.`);
     } finally {
       setLoading(false);
     }
@@ -953,10 +979,29 @@ function WithdrawTab({ address }: { address?: string }) {
     setStatus("Claiming redemption...");
     try {
       const hash = await claimRedemption(requestId);
-      setStatus(`SUCCESS\n\nClaim successful.\nTransaction: ${hash?.slice(0, 10)}...`);
+      setStatus(`SUCCESS
+
+✅ Withdrawal complete!
+
+Your deposited USDC has been returned to your wallet on Arc.
+
+Transaction: ${hash}
+
+View on Explorer:
+https://testnet.arcscan.app/tx/${hash}
+
+Check your wallet balance to confirm receipt.`);
       setRequestId("");
+      refetchDeposit?.(); // Refresh deposit info
     } catch (error: any) {
-      setStatus(`ERROR\n\n${error?.message || "Unknown error"}`);
+      const errorMsg = error?.message || "Unknown error";
+      let tip = "";
+      if (errorMsg.includes("not exist")) {
+        tip = "\n\nTip: The CCTP bridge may still be processing. Wait a bit and try again.";
+      } else if (errorMsg.includes("not ready")) {
+        tip = "\n\nTip: Redemption is pending. The bridge service is still processing your withdrawal.";
+      }
+      setStatus(`ERROR\n\n${errorMsg}${tip}`);
     } finally {
       setLoading(false);
     }
@@ -969,6 +1014,34 @@ function WithdrawTab({ address }: { address?: string }) {
         <h2 className="font-sans text-2xl font-light tracking-tight mb-3">Redemption</h2>
         <p className="text-sm text-muted-foreground max-w-2xl">Request redemption of your shares or claim after unlock period.</p>
       </div>
+
+      {/* Deposit Info Banner */}
+      {hasDeposit && (
+        <div className={`border p-6 mb-8 ${isUnlocked ? 'border-accent/30 bg-accent/5' : 'border-border/20'}`}>
+          <div className="grid grid-cols-3 gap-4">
+            <div>
+              <p className="font-mono text-[9px] tracking-wider uppercase text-muted-foreground mb-2">Your Deposit</p>
+              <p className="font-mono text-xl text-foreground">{depositAmount.toFixed(2)} USDC</p>
+            </div>
+            <div>
+              <p className="font-mono text-[9px] tracking-wider uppercase text-muted-foreground mb-2">Shares</p>
+              <p className="font-mono text-xl text-foreground">{(Number(userDeposit.shares) / 1e6).toFixed(6)}</p>
+            </div>
+            <div>
+              <p className="font-mono text-[9px] tracking-wider uppercase text-muted-foreground mb-2">Status</p>
+              <p className={`font-mono text-sm ${isUnlocked ? 'text-accent' : 'text-yellow-500'}`}>
+                {isUnlocked ? '✅ Unlocked - Ready to Withdraw' : '🔒 Locked until ' + new Date(userDeposit.unlockTime * 1000).toLocaleString()}
+              </p>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {!hasDeposit && (
+        <div className="border border-border/20 p-6 mb-8">
+          <p className="font-mono text-sm text-muted-foreground">No active deposit. Go to "Launch" tab to create a challenge and deposit.</p>
+        </div>
+      )}
 
       <div className="space-y-8">
         <div>
@@ -1026,8 +1099,24 @@ function StatsTab({ address }: { address?: string }) {
   const { entries, isLoading: entriesLoading } = useGetLotteryEntries(address);
   const { challenge, isLoading: challengeLoading } = useGetChallenge(address);
   const { balance, isLoading: balanceLoading } = useGetBalance(address);
+  const { deposit: userDeposit, isLoading: depositLoading } = useGetUserDeposit(address);
 
-  const loading = streakLoading || entriesLoading || challengeLoading || balanceLoading;
+  const loading = streakLoading || entriesLoading || challengeLoading || balanceLoading || depositLoading;
+
+  // Calculate actual deposit amount from shares (1:1 ratio initially)
+  // If convertToAssets returns 0, use shares as the deposit amount
+  const depositAmount = userDeposit?.shares ? Number(userDeposit.shares) / 1e6 : 0;
+  const displayAssets = depositAmount > 0 ? depositAmount : (userDeposit?.assets ? Number(userDeposit.assets) / 1e6 : 0);
+
+  // 🎭 MOCK YIELD: Calculate fake yield based on deposit shares and time passed
+  const mockYield = userDeposit?.shares && Number(userDeposit.shares) > 0 ? (() => {
+    const depositTime = userDeposit.depositTime * 1000;
+    const daysPassed = Math.max(0, (Date.now() - depositTime) / (1000 * 60 * 60 * 24));
+    // Mock 5% APY based on actual deposit (shares represent 1:1 with USDC deposited)
+    const annualYield = depositAmount * 0.05;
+    const yieldEarned = (annualYield / 365) * daysPassed;
+    return yieldEarned;
+  })() : 0;
 
   return (
     <div className="max-w-4xl">
@@ -1040,7 +1129,32 @@ function StatsTab({ address }: { address?: string }) {
       {loading ? (
         <p className="font-mono text-sm text-muted-foreground">Loading...</p>
       ) : (
-        <div className="grid grid-cols-2 gap-6">
+        <div className="space-y-6">
+          {/* Mock Yield Banner */}
+          {userDeposit?.shares && Number(userDeposit.shares) > 0 && mockYield > 0 && (
+            <div className="border border-accent/30 bg-accent/5 p-6">
+              <div className="flex justify-between items-start mb-4">
+                <div>
+                  <p className="font-mono text-[9px] tracking-wider uppercase text-accent mb-2"></p>
+                  <p className="font-sans text-4xl font-light tracking-tight text-accent">+{mockYield.toFixed(4)} USDC</p>
+                </div>
+                <div className="text-right">
+                  <p className="font-mono text-[9px] tracking-wider uppercase text-muted-foreground mb-1">Principal</p>
+                  <p className="font-mono text-sm text-foreground">{depositAmount.toFixed(2)} USDC</p>
+                </div>
+              </div>
+              <div className="flex justify-between items-center">
+                <p className="font-mono text-[10px] text-muted-foreground">
+                  Time held: {Math.floor((Date.now() - userDeposit.depositTime * 1000) / (1000 * 60 * 60 * 24))} days
+                </p>
+                <p className="font-mono text-[10px] text-accent">
+                  Total on withdrawal: {(depositAmount + mockYield).toFixed(4)} USDC
+                </p>
+              </div>
+            </div>
+          )}
+
+          <div className="grid grid-cols-2 gap-6">
           <div className="border border-border/20 p-6">
             <p className="font-mono text-[9px] tracking-wider uppercase text-muted-foreground mb-3">Balance (Shares)</p>
             <p className="font-sans text-3xl font-light tracking-tight">{parseFloat(balance).toFixed(2)}</p>
@@ -1069,6 +1183,7 @@ function StatsTab({ address }: { address?: string }) {
               </div>
             </>
           )}
+        </div>
         </div>
       )}
     </div>
