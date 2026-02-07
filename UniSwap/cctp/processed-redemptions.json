@@ -20,8 +20,17 @@
   {
     "requestId": "0x7836f29bc9dfd12ffe6ff48154fe5345c90b3c422801b5fbd0f64fd8526fefe0",
     "amount": "0",
-    "timestamp": 1770479604178,
+    "timestamp": 1770481439941,
     "arcRequestTxHash": "0x9e6e547cdfbe341f0442f8f58987e7142bc297acd8db77ebf69e3d1f5d173759",
+    "status": "failed",
+    "retryCount": 3,
+    "lastError": "The contract function \"withdrawFunds\" reverted with the following reason:\nZero amount\n\nContract Call:\n  address:   0xbE51ad59f4a68089fc86697c7d5EFe756268F0d9\n  function:  withdrawFunds(uint256 amount)\n  args:                   (0)\n  sender:    0xe01Add0c3640a8314132bAF491d101A38ffEF4f0\n\nDocs: https://viem.sh/docs/contract/writeContract\nVersion: viem@2.45.1"
+  },
+  {
+    "requestId": "0xa774cad1406593a95ee4b631fac9e9b0f98d8f325be0d7f63820285c2977b8ca",
+    "amount": "0",
+    "timestamp": 1770482632023,
+    "arcRequestTxHash": "0x17191e9ead56f25e27db59f0fb46d0d4ac66c8b67a4525d8d4631a596f6b3943",
     "status": "failed",
     "retryCount": 1,
     "lastError": "The contract function \"withdrawFunds\" reverted with the following reason:\nZero amount\n\nContract Call:\n  address:   0xbE51ad59f4a68089fc86697c7d5EFe756268F0d9\n  function:  withdrawFunds(uint256 amount)\n  args:                   (0)\n  sender:    0xe01Add0c3640a8314132bAF491d101A38ffEF4f0\n\nDocs: https://viem.sh/docs/contract/writeContract\nVersion: viem@2.45.1"

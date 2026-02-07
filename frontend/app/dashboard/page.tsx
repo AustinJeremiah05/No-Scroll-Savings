@@ -1136,7 +1136,7 @@ function StatsTab({ address }: { address?: string }) {
               <div className="flex justify-between items-start mb-4">
                 <div>
                   <p className="font-mono text-[9px] tracking-wider uppercase text-accent mb-2"></p>
-                  <p className="font-sans text-4xl font-light tracking-tight text-accent">+{mockYield.toFixed(4)} USDC</p>
+                  <p className="font-sans text-4xl font-light tracking-tight text-accent">+2.3479 USDC</p>
                 </div>
                 <div className="text-right">
                   <p className="font-mono text-[9px] tracking-wider uppercase text-muted-foreground mb-1">Principal</p>
