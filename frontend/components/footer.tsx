@@ -27,7 +27,9 @@ export function Footer() {
     <footer className="relative">
       {/* Main CTA */}
       <motion.a
-        href="mailto:hello@example.com"
+        href="https://github.com/AustinJeremiah05/No-Scroll-Savings/blob/main/Readme.md"
+        target="_blank"
+        rel="noopener noreferrer"
         data-cursor-hover
         className="relative block overflow-hidden"
         onMouseEnter={() => setIsHovered(true)}
@@ -51,7 +53,7 @@ export function Footer() {
               }}
               transition={{ duration: 0.3 }}
             >
-              Let's <span className="italic">Collaborate</span>
+              View <span className="italic">Documentation</span>
             </motion.h2>
 
             <motion.div
