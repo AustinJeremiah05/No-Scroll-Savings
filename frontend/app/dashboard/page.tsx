@@ -788,25 +788,43 @@ function MonitorTab({ address }: { address?: string }) {
     
     setChecking(true);
     try {
-      // Get challenge time window
-      const challengeStartTime = challenge?.startTime 
-        ? new Date(challenge.startTime * 1000) 
-        : new Date(Date.now() - 24 * 60 * 60 * 1000);
+      // Query the last 24 hours of app usage (or use challenge window if active)
+      const now = Date.now();
+      const last24Hours = now - (24 * 60 * 60 * 1000);
       
-      const challengeEndTime = challenge?.startTime && challenge?.duration
-        ? new Date((challenge.startTime + challenge.duration) * 1000)
-        : new Date();
+      // Use challenge window if active, otherwise last 24 hours
+      // For active challenges: check from challenge start to NOW (not to challenge end)
+      const queryStartTime = challenge?.active && challenge?.startTime 
+        ? challenge.startTime * 1000  // Convert from seconds to milliseconds
+        : last24Hours;
+      
+      // Always use current time as end point to detect violations up to now
+      const queryEndTime = now;
 
       console.log("🔍 Querying Supabase...");
       console.log("📍 URL:", process.env.NEXT_PUBLIC_SUPABASE_URL);
-      console.log("👤 ENS/User ID:", userEnsAddress);
+      console.log("👤 ENS/User ID (raw):", userEnsAddress);
+      console.log("👤 ENS/User ID (trimmed):", userEnsAddress.trim());
       console.log("👤 Wallet:", address.toLowerCase());
-      console.log("⏰ Challenge Window:", challengeStartTime.toLocaleString(), "to", challengeEndTime.toLocaleString());
+      
+      if (challenge?.active) {
+        console.log("🎯 Active Challenge Detected:");
+        console.log("   Type:", challenge.type);
+        console.log("   Start:", new Date(challenge.startTime * 1000).toLocaleString());
+        console.log("   Duration:", challenge.duration, "seconds");
+        console.log("   Using challenge start time for query");
+      } else {
+        console.log("⏰ No active challenge - using last 24 hours");
+      }
+      
+      console.log("⏰ Query Window:", new Date(queryStartTime).toLocaleString(), "to", new Date(queryEndTime).toLocaleString());
+      console.log("📅 Timestamp range (ms):", queryStartTime, "to", queryEndTime);
 
       // First, test connection with a simple query (no filters)
+      // Test connection: explicitly request a small set of columns including `app_name`
       const { data: testData, error: testError } = await supabase
         .from("usage_records")
-        .select("*", { count: 'exact', head: false })
+        .select("app_name, package_name, timestamp, user_id", { count: 'exact', head: false })
         .limit(1);
 
       if (testError) {
@@ -819,18 +837,16 @@ function MonitorTab({ address }: { address?: string }) {
       setSupabaseConnected(true);
 
       // Query by user_id field (matches ENS/username from mobile app)
-      // Convert dates to Unix timestamps (milliseconds) for bigint comparison
-      const startTimestamp = challengeStartTime.getTime();
-      const endTimestamp = challengeEndTime.getTime();
-      
-      console.log("📅 Timestamp range:", startTimestamp, "to", endTimestamp);
+      // Use millisecond timestamps for Supabase bigint comparison
+      console.log("🔎 Running Supabase query with timestamp filter...");
 
+      // Fetch relevant usage records and explicitly include `app_name` so the UI can display it
       const { data, error } = await supabase
         .from("usage_records")
-        .select("*")
+        .select("app_name, package_name, timestamp, user_id")
         .eq("user_id", userEnsAddress.trim())
-        .gte("timestamp", startTimestamp)
-        .lte("timestamp", endTimestamp);
+        .gte("timestamp", queryStartTime)
+        .lte("timestamp", queryEndTime);
 
       if (error) {
         console.error("❌ Query error:", error);
@@ -842,6 +858,13 @@ function MonitorTab({ address }: { address?: string }) {
       }
 
       console.log("📊 Records found:", data?.length || 0);
+      
+      if (data && data.length > 0) {
+        console.log("📋 Sample records:");
+        data.slice(0, 3).forEach((record: any, idx: number) => {
+          console.log(`  ${idx + 1}. app_name: "${record.app_name}", package_name: "${record.package_name}", timestamp: ${record.timestamp}`);
+        });
+      }
       
       if (!data || data.length === 0) {
         console.log("⚠️ No records found for ENS/User ID:", userEnsAddress);
@@ -857,14 +880,21 @@ function MonitorTab({ address }: { address?: string }) {
       const forbiddenAppsToCheck = ["Instagram", "Snapchat", "TikTok", "Twitter", "Facebook", "LinkedIn", "YouTube"];
       const foundForbidden: string[] = [];
 
+      console.log("🔍 Checking for forbidden apps...");
       const hasForbiddenApp = data?.some((record: any) => {
         const appName = record.app_name?.toLowerCase() || "";
         const packageName = record.package_name?.toLowerCase() || "";
+        
+        console.log(`  Checking: appName="${appName}", packageName="${packageName}"`);
         
         const found = forbiddenAppsToCheck.find(app => 
           appName.includes(app.toLowerCase()) || 
           packageName.includes(app.toLowerCase())
         );
+
+        if (found) {
+          console.log(`    ✅ Found forbidden app: ${found}`);
+        }
 
         if (found && !foundForbidden.includes(found)) {
           foundForbidden.push(found);
@@ -873,6 +903,7 @@ function MonitorTab({ address }: { address?: string }) {
         return found;
       });
 
+      console.log("🚫 Forbidden apps found:", foundForbidden);
       setForbiddenApps(foundForbidden);
       setIsCompliant(!hasForbiddenApp);
     } catch (error) {
