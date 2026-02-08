@@ -24,6 +24,7 @@ Modern society faces a digital wellbeing crisis:
 
 **Key Innovation**: Arc Testnet as a liquidity hub - users interact with low gas fees while their funds generate yields on Ethereum's deep DeFi markets via Circle's CCTP bridge.
 
+Pitch Link : https://tinyurl.com/6eytvptx
 ---
 
 ## 🏗️ Architecture Diagram
