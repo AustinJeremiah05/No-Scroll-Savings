@@ -30,6 +30,7 @@ export default function Dashboard() {
   const router = useRouter();
   const [activeTab, setActiveTab] = useState("challenge");
   const [showDepositDetails, setShowDepositDetails] = useState(false);
+  const [activeSubname, setActiveSubname] = useState<string | null>(null);
   const { challenge, isLoading: challengeLoading } = useGetChallenge(address);
   const { deposit: userDeposit, isLoading: depositLoading, refetch: refetchDeposit } = useGetUserDeposit(address);
 
@@ -38,6 +39,38 @@ export default function Dashboard() {
       router.push("/");
     }
   }, [isConnected, router]);
+
+  // Load subname based on the user's ENS address from their deposit
+  useEffect(() => {
+    if (userDeposit && !depositLoading) {
+      // Get the parent ENS from localStorage (the one used for this deposit)
+      const parentEns = localStorage.getItem('userEnsAddress');
+      
+      if (parentEns && parentEns.includes('.eth')) {
+        // Load the subname for this specific parent ENS
+        const subnameForThisParent = localStorage.getItem(`subname_${parentEns}`);
+        
+        if (subnameForThisParent) {
+          // Verify that the subname actually ends with the parent ENS
+          if (subnameForThisParent.endsWith(`.${parentEns}`)) {
+            setActiveSubname(subnameForThisParent);
+          } else {
+            // Subname doesn't match this parent, don't show it
+            setActiveSubname(null);
+          }
+        } else {
+          // No subname for this parent ENS
+          setActiveSubname(null);
+        }
+      } else {
+        // No .eth address, clear subname
+        setActiveSubname(null);
+      }
+    } else {
+      // No deposit or still loading, clear subname
+      setActiveSubname(null);
+    }
+  }, [userDeposit, depositLoading]);
 
   if (!isConnected) {
     return null;
@@ -134,7 +167,7 @@ export default function Dashboard() {
           {/* Active Challenges */}
           <div className="mt-8">
             <p className="font-mono text-[9px] tracking-[0.3em] text-muted-foreground uppercase mb-3">Active Challenges</p>
-            {challengeLoading || depositLoading ? (
+            {(challengeLoading || depositLoading) && !userDeposit ? (
               <div className="border border-border/20 bg-black/60 backdrop-blur-sm p-4">
                 <p className="font-mono text-[10px] text-muted-foreground">Loading...</p>
               </div>
@@ -144,11 +177,25 @@ export default function Dashboard() {
                 className="w-full border border-accent/30 bg-accent/5 backdrop-blur-sm p-4 text-left hover:bg-accent/10 transition-colors group"
               >
                 <div className="flex justify-between items-center">
-                  <div>
+                  <div className="flex-1">
                     <p className="font-mono text-xs text-foreground group-hover:text-accent transition-colors">{userDeposit.challengeType}</p>
                     <p className="font-mono text-[10px] text-muted-foreground mt-1">
                       {(Number(userDeposit.assets) / 1e6).toFixed(2)} USDC • Click for details
                     </p>
+                    {activeSubname && (
+                      <a
+                        href={`https://sepolia.app.ens.domains/${activeSubname}`}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        onClick={(e) => e.stopPropagation()}
+                        className="inline-flex items-center gap-1 font-mono text-[9px] text-accent hover:text-accent/80 mt-2 border border-accent/20 px-2 py-1 rounded hover:border-accent/40 transition-colors"
+                      >
+                        🔗 {activeSubname}
+                        <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
+                        </svg>
+                      </a>
+                    )}
                   </div>
                   <span className="font-mono text-[8px] px-2 py-1 border border-accent/40 text-accent uppercase">Active</span>
                 </div>
@@ -384,7 +431,11 @@ function LaunchChallengeTab({ address, refetchDeposit }: { address?: string; ref
             365 // 1 year duration in days
           );
           subnameHash = hash;
-          setStatus(`✅ Subname created: ${subnameLabel}.${ensAddress}\n🚀 Now depositing USDC...`);
+          // Save the full subname to localStorage with parent ENS as key
+          const fullSubname = `${subnameLabel.trim()}.${ensAddress}`;
+          localStorage.setItem('lastCreatedSubname', fullSubname);
+          localStorage.setItem(`subname_${ensAddress}`, fullSubname); // Store by parent ENS
+          setStatus(`✅ Subname created: ${fullSubname}\n🚀 Now depositing USDC...`);
         } catch (subnameErr: any) {
           console.error('Subname creation error:', subnameErr);
           setStatus(`⚠️ Could not create subname: ${subnameErr.message}\n🚀 Continuing with deposit...`);
