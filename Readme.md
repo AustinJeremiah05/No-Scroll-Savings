@@ -1,5 +1,4 @@
-No-Scroll-Savings
-# No-Scroll Savings
+<img width="1132" height="239" alt="image" src="https://github.com/user-attachments/assets/0d9ac880-93f3-4c08-8919-6b86b70a1620" />
 
 ##  The Problem
 
