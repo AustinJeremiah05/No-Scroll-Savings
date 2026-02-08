@@ -1,7 +1,7 @@
 No-Scroll-Savings
 # No-Scroll Savings
 
-## 🎯 The Problem
+##  The Problem
 
 Modern society faces a digital wellbeing crisis:
 - Average person spends 6+ hours daily on screens
@@ -14,7 +14,7 @@ Modern society faces a digital wellbeing crisis:
 
 ---
 
-## 💡 Our Solution
+##  Our Solution
 
 **No-Scroll Savings** is a cross-chain DeFi application that gamifies savings by combining:
 - **Behavioral Challenges**: Users commit to digital wellbeing goals (reduce social media, limit screen time)
@@ -1968,10 +1968,9 @@ MIT License - see [LICENSE](LICENSE) file for details
 
 ---
 
-## 📞 Contact & Support
+##  Contact & Support
 
-- **Discord**: [Join our community](@imaustin04)
-- **Email**: saustinjeremiah04@gmail.com
+- **Email**: austinjeremiah04@gmail.com
 - **GitHub**: [github.com/noscrollsavings](https://github.com/AustinJeremiah05/No-Scroll-Savings/tree/main)
 
 ---
